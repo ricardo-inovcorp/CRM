@@ -1,1 +1,3 @@
-export { default as Label } from './Label.vue'
+import { Label } from "./label"
+
+export { Label }

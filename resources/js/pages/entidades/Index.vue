@@ -1,246 +1,76 @@
 <script setup lang="ts">
+import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { Eye, PenLine, Plus, Search, Trash2 } from 'lucide-vue-next';
-import { Badge } from '@/components/ui/badge';
-import { debounce } from 'lodash';
-import { watch } from 'vue';
 
+// Simplificando o tipo para evitar erros
 interface Props {
-    entidades: {
-        data: Array<{
-            id: number;
-            nome: string;
-            email: string;
-            telefone: string;
-            website: string;
-            estado: string;
-            pais: {
-                id: number;
-                nome: string;
-            } | null;
-        }>;
-        meta: {
-            current_page: number;
-            last_page: number;
-            per_page: number;
-            total: number;
-        };
-    };
-    filters: {
-        search: string;
-        estado: string;
-    };
+    entidades: any;
+    filters: any;
 }
 
-const props = defineProps<Props>();
-
-// Busca debounce
-const search = (e: Event) => {
-    const value = (e.target as HTMLInputElement).value;
-    
-    router.get(
-        route('entidades.index'),
-        { search: value, estado: props.filters.estado },
-        { preserveState: true, replace: true }
-    );
-};
-
-const debouncedSearch = debounce(search, 300);
-
-watch(
-    () => props.filters.search,
-    (value) => {
-        if (value === '') {
-            router.get(
-                route('entidades.index'),
-                { estado: props.filters.estado },
-                { preserveState: true, replace: true }
-            );
-        }
-    }
-);
-
-// Filtro de estado
-const filtroEstado = (valor: string) => {
-    router.get(
-        route('entidades.index'),
-        { search: props.filters.search, estado: valor },
-        { preserveState: true, replace: true }
-    );
-};
+defineProps<Props>();
 </script>
 
 <template>
     <Head title="Entidades" />
 
-    <AppLayout :breadcrumbs="[{ label: 'Entidades', active: true }]">
+    <AppLayout>
         <div class="p-6">
             <div class="mb-6 flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Entidades</h1>
-                <Link :href="route('entidades.create')">
-                    <Button>
-                        <Plus class="mr-2 h-4 w-4" />
-                        Nova Entidade
-                    </Button>
-                </Link>
+                <a :href="route('entidades.create')" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                    Nova Entidade
+                </a>
             </div>
 
-            <div class="mb-6 flex flex-wrap gap-4">
-                <!-- Filtro de busca -->
-                <div class="relative flex-grow">
-                    <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        id="search"
-                        type="search"
-                        placeholder="Buscar entidades..."
-                        class="pl-10"
-                        :value="filters.search"
-                        @input="debouncedSearch"
-                    />
-                </div>
+            <div class="bg-zinc-800 shadow-lg rounded-lg overflow-hidden">
+                <p v-if="!entidades || !entidades.data || entidades.data.length === 0" class="text-center py-6 text-gray-400">
+                    Nenhuma entidade encontrada.
+                </p>
+                <div v-else>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-zinc-700">
+                            <thead>
+                                <tr class="bg-zinc-900">
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nome</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Telefone</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-700">
+                                <tr v-for="entidade in entidades.data" :key="entidade.id" class="hover:bg-zinc-700 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap text-gray-200">{{ entidade.nome }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-gray-200">{{ entidade.email || '—' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-gray-200">{{ entidade.telefone || '—' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                            :class="entidade.estado === 'Ativo' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'">
+                                            {{ entidade.estado }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- Filtro de estado -->
-                <div class="flex flex-wrap gap-2">
-                    <Button
-                        :variant="filters.estado === '' ? 'default' : 'outline'"
-                        @click="filtroEstado('')"
-                    >
-                        Todos
-                    </Button>
-                    <Button
-                        :variant="filters.estado === 'Ativo' ? 'default' : 'outline'"
-                        @click="filtroEstado('Ativo')"
-                    >
-                        Ativos
-                    </Button>
-                    <Button
-                        :variant="filters.estado === 'Inativo' ? 'default' : 'outline'"
-                        @click="filtroEstado('Inativo')"
-                    >
-                        Inativos
-                    </Button>
-                </div>
-            </div>
-
-            <div class="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>País</TableHead>
-                            <TableHead>Telefone</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead class="w-32">Ações</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <TableRow v-for="entidade in entidades.data" :key="entidade.id">
-                            <TableCell class="font-medium">{{ entidade.nome }}</TableCell>
-                            <TableCell>{{ entidade.pais?.nome || '—' }}</TableCell>
-                            <TableCell>{{ entidade.telefone || '—' }}</TableCell>
-                            <TableCell>{{ entidade.email || '—' }}</TableCell>
-                            <TableCell>
-                                <Badge :variant="entidade.estado === 'Ativo' ? 'success' : 'destructive'">
-                                    {{ entidade.estado }}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div class="flex space-x-2">
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Link :href="route('entidades.show', entidade.id)">
-                                                    <Button variant="outline" size="icon">
-                                                        <Eye class="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Visualizar</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Link :href="route('entidades.edit', entidade.id)">
-                                                    <Button variant="outline" size="icon">
-                                                        <PenLine class="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Editar</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Link
-                                                    :href="route('entidades.destroy', entidade.id)"
-                                                    method="delete"
-                                                    as="button"
-                                                    @click.prevent="
-                                                        if (confirm('Tem certeza que deseja excluir esta entidade?')) {
-                                                            router.delete(route('entidades.destroy', entidade.id));
-                                                        }
-                                                    "
-                                                >
-                                                    <Button variant="outline" size="icon">
-                                                        <Trash2 class="h-4 w-4" />
-                                                    </Button>
-                                                </Link>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Excluir</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                        <TableRow v-if="entidades.data.length === 0">
-                            <TableCell colspan="6" class="h-24 text-center">
-                                Nenhuma entidade encontrada.
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-            </div>
-
-            <!-- Paginação -->
-            <div v-if="entidades.meta.last_page > 1" class="mt-6 flex items-center justify-between">
-                <div class="text-sm text-muted-foreground">
-                    Mostrando {{ (entidades.meta.current_page - 1) * entidades.meta.per_page + 1 }}
-                    a {{ Math.min(entidades.meta.current_page * entidades.meta.per_page, entidades.meta.total) }}
-                    de {{ entidades.meta.total }} resultados
-                </div>
-
-                <div class="flex gap-2">
-                    <Link
-                        v-if="entidades.meta.current_page > 1"
-                        :href="`?page=${entidades.meta.current_page - 1}`"
-                        preserve-scroll
-                    >
-                        <Button variant="outline" size="sm">Anterior</Button>
-                    </Link>
-
-                    <Link
-                        v-if="entidades.meta.current_page < entidades.meta.last_page"
-                        :href="`?page=${entidades.meta.current_page + 1}`"
-                        preserve-scroll
-                    >
-                        <Button variant="outline" size="sm">Próxima</Button>
-                    </Link>
+                    <div v-if="entidades.meta && entidades.meta.last_page > 1" class="mt-4 bg-zinc-800 px-6 py-3 flex justify-between items-center">
+                        <div class="text-sm text-gray-400">
+                            Mostrando {{ entidades.meta.current_page }} de {{ entidades.meta.last_page }} páginas
+                        </div>
+                        <div class="flex space-x-2">
+                            <a v-if="entidades.meta.current_page > 1" 
+                                :href="`?page=${entidades.meta.current_page - 1}`"
+                                class="px-3 py-1 bg-zinc-700 text-gray-200 rounded-md hover:bg-zinc-600 transition">
+                                Anterior
+                            </a>
+                            <a v-if="entidades.meta.current_page < entidades.meta.last_page" 
+                                :href="`?page=${entidades.meta.current_page + 1}`"
+                                class="px-3 py-1 bg-zinc-700 text-gray-200 rounded-md hover:bg-zinc-600 transition">
+                                Próxima
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

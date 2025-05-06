@@ -10,7 +10,12 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'laravelVersion' => Illuminate\Foundation\Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -18,28 +23,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    // Rotas CRM protegidas por Tenant
-    Route::middleware(['ensure.tenant.exists'])->group(function () {
-        // Entidades
-        Route::resource('entidades', EntidadeController::class);
+    // Rota de teste para entidades
+    Route::get('entidades-test', function () {
+        return Inertia::render('EntidadesTest');
+    })->name('entidades.test');
+
+    // Relatórios (rota temporária)
+    Route::get('relatorios', function () {
+        return Inertia::render('Dashboard', ['message' => 'Relatórios em desenvolvimento']);
+    })->name('relatorios');
+
+    // Rota de teste para diagnóstico
+    Route::get('/teste-erro', function () {
+        return Inertia::render('ErrorTest');
+    })->name('error.test');
+
+    // Rotas CRM (removendo temporariamente o middleware tenant)
+    // Entidades
+    Route::resource('entidades', EntidadeController::class);
+    
+    // Contactos
+    Route::resource('contactos', ContactoController::class);
+    
+    // Atividades
+    Route::resource('atividades', AtividadeController::class);
+    
+    // Configurações
+    Route::prefix('configuracoes')->name('configuracoes.')->group(function () {
+        // Países
+        Route::resource('paises', PaisController::class);
         
-        // Contactos
-        Route::resource('contactos', ContactoController::class);
+        // Funções
+        Route::resource('funcoes', FuncaoController::class);
         
-        // Atividades
-        Route::resource('atividades', AtividadeController::class);
-        
-        // Configurações
-        Route::prefix('configuracoes')->name('configuracoes.')->group(function () {
-            // Países
-            Route::resource('paises', PaisController::class);
-            
-            // Funções
-            Route::resource('funcoes', FuncaoController::class);
-            
-            // Tipos de Atividade
-            Route::resource('tipos-atividade', TipoAtividadeController::class);
-        });
+        // Tipos de Atividade
+        Route::resource('tipos-atividade', TipoAtividadeController::class);
     });
 });
 

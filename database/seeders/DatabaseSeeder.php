@@ -7,6 +7,9 @@ use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Artisan;
+use Database\Seeders\AtividadeSeeder;
+use Database\Seeders\ContactoSeeder;
+use Database\Seeders\EntidadeSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,8 +18,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Criar tenants
-        $this->call(TenantSeeder::class);
+        $this->call([
+            TenantSeeder::class,
+            EntidadeSeeder::class,
+            ContactoSeeder::class,
+            AtividadeSeeder::class,
+        ]);
         
         // Criar usuário administrador principal (landlord)
         User::factory()->create([
