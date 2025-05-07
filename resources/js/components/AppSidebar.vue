@@ -31,7 +31,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Relatórios',
-        href: '/relatorios',
+        href: route('relatorios.index'),
         icon: BarChart2,
     },
     {

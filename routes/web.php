@@ -28,10 +28,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('EntidadesTest');
     })->name('entidades.test');
 
-    // Relatórios (rota temporária)
-    Route::get('relatorios', function () {
-        return Inertia::render('Dashboard', ['message' => 'Relatórios em desenvolvimento']);
-    })->name('relatorios');
+    // Relatórios
+    Route::prefix('relatorios')->name('relatorios.')->group(function () {
+        Route::get('/', [App\Http\Controllers\RelatorioController::class, 'index'])->name('index');
+        Route::get('/entidades/pdf', [App\Http\Controllers\RelatorioController::class, 'entidadesPdf'])->name('entidades.pdf');
+        Route::get('/contactos/pdf', [App\Http\Controllers\RelatorioController::class, 'contactosPdf'])->name('contactos.pdf');
+        Route::get('/atividades/pdf', [App\Http\Controllers\RelatorioController::class, 'atividadesPdf'])->name('atividades.pdf');
+        Route::get('/atividades-por-entidade/pdf', [App\Http\Controllers\RelatorioController::class, 'atividadesPorEntidadePdf'])->name('atividades-por-entidade.pdf');
+    });
 
     // Rota de teste para diagnóstico
     Route::get('/teste-erro', function () {

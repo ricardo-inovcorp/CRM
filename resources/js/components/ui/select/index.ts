@@ -1,15 +1,21 @@
+import Select from './Select.vue'
 import {
-  Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
-  SelectValue,
-} from "./select"
+  SelectValue
+} from 'radix-vue'
 
 export {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } 

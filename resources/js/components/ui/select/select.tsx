@@ -1,4 +1,4 @@
-import { defineComponent, h, PropType, ref, watch } from "vue"
+import { defineComponent, h, PropType, ref, watch, provide, inject } from "vue"
 import { cn } from "@/lib/utils"
 
 // Main Select component (handles the state)
@@ -34,6 +34,12 @@ export const Select = defineComponent({
       open.value = false
     }
     
+    // Fornece o contexto para os componentes filhos
+    provide('selectContext', { 
+      open,
+      select: handleSelect
+    })
+    
     return () => h("div", {
       class: "relative w-full",
       "data-state": open.value ? "open" : "closed",
@@ -50,12 +56,22 @@ export const Select = defineComponent({
 // Select Trigger (clickable part)
 export const SelectTrigger = defineComponent({
   setup(_, { slots, attrs }) {
+    // Obtém o contexto do componente pai (Select)
+    const parentContext = inject('selectContext', { open: ref(false) }) as { open: any }
+    
+    const handleClick = () => {
+      if (typeof parentContext.open === 'object' && 'value' in parentContext.open) {
+        parentContext.open.value = !parentContext.open.value
+      }
+    }
+    
     return () => h("button", {
       type: "button",
       ...attrs,
+      onClick: handleClick,
       class: cn(
         "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        attrs.class
+        attrs.class as string
       ),
     }, slots.default?.())
   }
@@ -78,10 +94,18 @@ export const SelectValue = defineComponent({
 
 // Select Content (dropdown)
 export const SelectContent = defineComponent({
-  setup(_, { slots }) {
-    return () => h("div", {
-      class: "relative z-50 min-w-[8rem] overflow-hidden rounded-md border border-input bg-popover text-popover-foreground shadow-md animate-in fade-in-80"
-    }, slots.default?.())
+  setup(_, { slots, attrs }) {
+    // Obtém o contexto do componente pai (Select)
+    const parentContext = inject('selectContext', { open: ref(false) })
+    
+    return () => {
+      return h("div", {
+        class: cn(
+          "relative z-50 min-w-[8rem] overflow-hidden rounded-md border border-input bg-popover text-popover-foreground shadow-md animate-in fade-in-80",
+          !parentContext.open.value && "hidden"
+        )
+      }, slots.default?.())
+    }
   }
 })
 
@@ -94,11 +118,23 @@ export const SelectItem = defineComponent({
     }
   },
   setup(props, { slots, attrs }) {
+    const parentContext = inject('selectContext', {
+      select: (val: string | number) => {},
+      open: ref(false)
+    }) as any
+    
+    const handleClick = () => {
+      if (typeof parentContext.select === 'function') {
+        parentContext.select(props.value)
+      }
+    }
+    
     return () => h("div", {
       ...attrs,
+      onClick: handleClick,
       class: cn(
         "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        attrs.class
+        attrs.class as string
       ),
     }, slots.default?.())
   }
