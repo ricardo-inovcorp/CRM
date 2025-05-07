@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Head, useForm } from '@inertiajs/vue3';
-import { useForm as useVeeForm } from 'vee-validate';
-import { toTypedSchema } from '@vee-validate/zod';
-import * as z from 'zod';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { ref, computed } from 'vue';
 import { ArrowLeft, Save } from 'lucide-vue-next';
 
 interface Props {
@@ -25,63 +22,82 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// Definindo o schema de validação
-const formSchema = toTypedSchema(
-    z.object({
-        nome: z.string().min(2, 'Nome é obrigatório').max(255),
-        apelido: z.string().max(255).nullable().optional(),
-        entidade_id: z.string().min(1, 'Entidade é obrigatória'),
-        funcao_id: z.string().nullable().optional(),
-        telefone: z.string().max(20).nullable().optional(),
-        telemovel: z.string().max(20).nullable().optional(),
-        email: z.string().email('Email inválido').max(255).nullable().optional(),
-        observacoes: z.string().nullable().optional(),
-        estado: z.string().min(1, 'Estado é obrigatório'),
-    })
-);
+// Dados do formulário
+const nome = ref('');
+const apelido = ref('');
+const entidade_id = ref(0);
+const funcao_id = ref(0);
+const telefone = ref('');
+const telemovel = ref('');
+const email = ref('');
+const observacoes = ref('');
+const estado = ref('Ativo');
 
-// Formulário Inertia para submissão de dados
-const form = useForm({
-    nome: '',
-    apelido: '',
-    entidade_id: '',
-    funcao_id: '',
-    telefone: '',
-    telemovel: '',
-    email: '',
-    observacoes: '',
-    estado: 'Ativo',
-});
+// Campo de pesquisa para funções
+const funcaoPesquisa = ref('');
 
-// Formulário VeeValidate para validação
-const veeForm = useVeeForm({
-    validationSchema: formSchema,
-    initialValues: {
-        nome: '',
-        apelido: '',
-        entidade_id: '',
-        funcao_id: '',
-        telefone: '',
-        telemovel: '',
-        email: '',
-        observacoes: '',
-        estado: 'Ativo',
-    },
-});
-
-// Enviar o formulário
-const onSubmit = veeForm.handleSubmit((values) => {
-    form.clearErrors();
+// Funções filtradas com base na pesquisa
+const funcoesFiltradas = computed(() => {
+    if (!funcaoPesquisa.value || !props.funcoes) return props.funcoes;
     
-    // Converter valores para o formato esperado pela API
-    const formattedValues = {
-        ...values,
-        entidade_id: parseInt(values.entidade_id),
-        funcao_id: values.funcao_id ? parseInt(values.funcao_id) : null,
+    const pesquisa = funcaoPesquisa.value.toLowerCase();
+    return props.funcoes.filter(f => f.nome.toLowerCase().includes(pesquisa));
+});
+
+// Estado para controlar a exibição dos dropdowns
+const entidadeDropdownOpen = ref(false);
+const funcaoDropdownOpen = ref(false);
+
+// Funções para toggle das dropdowns
+function toggleEntidadeDropdown() {
+    entidadeDropdownOpen.value = !entidadeDropdownOpen.value;
+    if (entidadeDropdownOpen.value) {
+        funcaoDropdownOpen.value = false;
+    }
+}
+
+function toggleFuncaoDropdown() {
+    funcaoDropdownOpen.value = !funcaoDropdownOpen.value;
+    if (funcaoDropdownOpen.value) {
+        entidadeDropdownOpen.value = false;
+    }
+}
+
+// Funções para selecionar valores
+function selecionarEntidade(id: number, nome: string) {
+    entidade_id.value = id;
+    entidadeDropdownOpen.value = false;
+}
+
+function selecionarFuncao(id: number, nome: string) {
+    funcao_id.value = id;
+    funcaoDropdownOpen.value = false;
+}
+
+// Função para enviar o formulário
+function submitForm() {
+    // Validações básicas
+    if (!nome.value || !entidade_id.value) {
+        alert('Por favor, preencha todos os campos obrigatórios');
+        return;
+    }
+    
+    // Preparar os dados para envio
+    const formData = {
+        nome: nome.value,
+        apelido: apelido.value,
+        entidade_id: entidade_id.value,
+        funcao_id: funcao_id.value || null,
+        telefone: telefone.value,
+        telemovel: telemovel.value,
+        email: email.value,
+        observacoes: observacoes.value,
+        estado: estado.value,
     };
-    
-    form.post(route('contactos.store'), formattedValues);
-});
+
+    // Usar router.post diretamente
+    router.post(route('contactos.store'), formData);
+}
 </script>
 
 <template>
@@ -110,198 +126,196 @@ const onSubmit = veeForm.handleSubmit((values) => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Form @submit="onSubmit" class="space-y-6">
+                    <form @submit.prevent="submitForm" class="space-y-6">
                         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <!-- Nome -->
-                            <FormField
-                                :validator="veeForm.getFieldState('nome')"
-                                name="nome"
-                                :server-error="form.errors.nome"
-                            >
-                                <FormItem>
-                                    <FormLabel>Nome *</FormLabel>
-                                    <FormControl>
-                                        <Input id="nome" v-model="form.nome" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Nome <span class="text-red-500">*</span></label>
+                                <Input v-model="nome" placeholder="Nome do contacto" required />
+                            </div>
 
                             <!-- Apelido -->
-                            <FormField
-                                :validator="veeForm.getFieldState('apelido')"
-                                name="apelido"
-                                :server-error="form.errors.apelido"
-                            >
-                                <FormItem>
-                                    <FormLabel>Apelido</FormLabel>
-                                    <FormControl>
-                                        <Input id="apelido" v-model="form.apelido" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Apelido</label>
+                                <Input v-model="apelido" placeholder="Apelido do contacto" />
+                            </div>
 
                             <!-- Entidade -->
-                            <FormField
-                                :validator="veeForm.getFieldState('entidade_id')"
-                                name="entidade_id"
-                                :server-error="form.errors.entidade_id"
-                            >
-                                <FormItem>
-                                    <FormLabel>Entidade *</FormLabel>
-                                    <FormControl>
-                                        <Select v-model="form.entidade_id">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecione uma entidade" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem
-                                                    v-for="entidade in entidades"
-                                                    :key="entidade.id"
-                                                    :value="entidade.id.toString()"
-                                                >
-                                                    {{ entidade.nome }}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Entidade <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <button 
+                                        type="button" 
+                                        @click="toggleEntidadeDropdown" 
+                                        class="w-full flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                                    >
+                                        <span>{{ entidade_id ? props.entidades.find(e => e.id === entidade_id)?.nome : 'Selecione uma entidade' }}</span>
+                                        <span>▼</span>
+                                    </button>
+                                    <div 
+                                        v-if="entidadeDropdownOpen" 
+                                        class="absolute left-0 top-full mt-1 w-full z-50 rounded-md border bg-popover p-1 shadow-md"
+                                    >
+                                        <div 
+                                            v-for="entidade in props.entidades" 
+                                            :key="entidade.id" 
+                                            @click="selecionarEntidade(entidade.id, entidade.nome)"
+                                            class="cursor-pointer relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                        >
+                                            {{ entidade.nome }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Função -->
-                            <FormField
-                                :validator="veeForm.getFieldState('funcao_id')"
-                                name="funcao_id"
-                                :server-error="form.errors.funcao_id"
-                            >
-                                <FormItem>
-                                    <FormLabel>Função</FormLabel>
-                                    <FormControl>
-                                        <Select v-model="form.funcao_id">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecione uma função" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="">Nenhuma</SelectItem>
-                                                <SelectItem
-                                                    v-for="funcao in funcoes"
-                                                    :key="funcao.id"
-                                                    :value="funcao.id.toString()"
-                                                >
-                                                    {{ funcao.nome }}
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Função</label>
+                                <div class="relative">
+                                    <button 
+                                        type="button" 
+                                        @click="toggleFuncaoDropdown" 
+                                        class="w-full flex items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                                    >
+                                        <span>{{ funcao_id ? props.funcoes.find(f => f.id === funcao_id)?.nome : 'Selecione uma função' }}</span>
+                                        <span>▼</span>
+                                    </button>
+                                    <div 
+                                        v-if="funcaoDropdownOpen" 
+                                        class="absolute left-0 top-full mt-1 w-full z-50 rounded-md border bg-popover p-1 shadow-md max-h-60 overflow-y-auto"
+                                    >
+                                        <!-- Pesquisa -->
+                                        <div class="sticky top-0 bg-background p-1 border-b">
+                                            <Input 
+                                                v-model="funcaoPesquisa" 
+                                                placeholder="Pesquisar função..." 
+                                                class="w-full text-sm" 
+                                                @click.stop 
+                                            />
+                                        </div>
+                                        
+                                        <div 
+                                            @click="funcao_id = 0; funcaoDropdownOpen = false"
+                                            class="cursor-pointer relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                        >
+                                            Nenhuma
+                                        </div>
+                                        
+                                        <div v-if="funcaoPesquisa">
+                                            <!-- Resultados da pesquisa -->
+                                            <div class="pt-2 pl-2 pb-1 text-xs font-semibold text-gray-500">Resultados da Pesquisa</div>
+                                            <div 
+                                                v-for="funcao in funcoesFiltradas" 
+                                                :key="funcao.id" 
+                                                @click="selecionarFuncao(funcao.id, funcao.nome)"
+                                                class="cursor-pointer relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                            >
+                                                {{ funcao.nome }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div v-else>
+                                            <!-- Funções de direção -->
+                                            <div class="pt-2 pl-2 pb-1 text-xs font-semibold text-gray-500">Direção</div>
+                                            <div 
+                                                v-for="funcao in props.funcoes.filter(f => ['CEO', 'Diretor Geral', 'Diretor Executivo', 'Diretor Financeiro', 'Diretor de Marketing', 'Diretor Comercial', 'Diretor de Operações', 'Diretor de Tecnologia', 'Diretor de Recursos Humanos'].includes(f.nome))" 
+                                                :key="funcao.id" 
+                                                @click="selecionarFuncao(funcao.id, funcao.nome)"
+                                                class="cursor-pointer relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                            >
+                                                {{ funcao.nome }}
+                                            </div>
+                                            
+                                            <!-- Funções de gestão -->
+                                            <div class="pt-2 pl-2 pb-1 text-xs font-semibold text-gray-500">Gestão</div>
+                                            <div 
+                                                v-for="funcao in props.funcoes.filter(f => ['Gerente', 'Gerente de Projeto', 'Gerente de Produto', 'Gerente de Vendas', 'Gerente de Marketing', 'Gerente Administrativo', 'Gerente Financeiro', 'Gerente de RH', 'Coordenador', 'Supervisor'].includes(f.nome))" 
+                                                :key="funcao.id" 
+                                                @click="selecionarFuncao(funcao.id, funcao.nome)"
+                                                class="cursor-pointer relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                            >
+                                                {{ funcao.nome }}
+                                            </div>
+                                            
+                                            <!-- Funções comerciais -->
+                                            <div class="pt-2 pl-2 pb-1 text-xs font-semibold text-gray-500">Comercial</div>
+                                            <div 
+                                                v-for="funcao in props.funcoes.filter(f => ['Vendedor', 'Representante Comercial', 'Executivo de Contas', 'Consultor de Vendas', 'Assistente Comercial'].includes(f.nome))" 
+                                                :key="funcao.id" 
+                                                @click="selecionarFuncao(funcao.id, funcao.nome)"
+                                                class="cursor-pointer relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                            >
+                                                {{ funcao.nome }}
+                                            </div>
+                                            
+                                            <!-- Outras funções -->
+                                            <div class="pt-2 pl-2 pb-1 text-xs font-semibold text-gray-500">Outras Funções</div>
+                                            <div 
+                                                v-for="funcao in props.funcoes.filter(f => 
+                                                    !['CEO', 'Diretor Geral', 'Diretor Executivo', 'Diretor Financeiro', 'Diretor de Marketing', 'Diretor Comercial', 'Diretor de Operações', 'Diretor de Tecnologia', 'Diretor de Recursos Humanos',
+                                                    'Gerente', 'Gerente de Projeto', 'Gerente de Produto', 'Gerente de Vendas', 'Gerente de Marketing', 'Gerente Administrativo', 'Gerente Financeiro', 'Gerente de RH', 'Coordenador', 'Supervisor',
+                                                    'Vendedor', 'Representante Comercial', 'Executivo de Contas', 'Consultor de Vendas', 'Assistente Comercial'].includes(f.nome))" 
+                                                :key="funcao.id" 
+                                                @click="selecionarFuncao(funcao.id, funcao.nome)"
+                                                class="cursor-pointer relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                                            >
+                                                {{ funcao.nome }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Telefone -->
-                            <FormField
-                                :validator="veeForm.getFieldState('telefone')"
-                                name="telefone"
-                                :server-error="form.errors.telefone"
-                            >
-                                <FormItem>
-                                    <FormLabel>Telefone</FormLabel>
-                                    <FormControl>
-                                        <Input id="telefone" v-model="form.telefone" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Telefone</label>
+                                <Input v-model="telefone" placeholder="Telefone" />
+                            </div>
 
                             <!-- Telemóvel -->
-                            <FormField
-                                :validator="veeForm.getFieldState('telemovel')"
-                                name="telemovel"
-                                :server-error="form.errors.telemovel"
-                            >
-                                <FormItem>
-                                    <FormLabel>Telemóvel</FormLabel>
-                                    <FormControl>
-                                        <Input id="telemovel" v-model="form.telemovel" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Telemóvel</label>
+                                <Input v-model="telemovel" placeholder="Telemóvel" />
+                            </div>
 
                             <!-- Email -->
-                            <FormField
-                                :validator="veeForm.getFieldState('email')"
-                                name="email"
-                                :server-error="form.errors.email"
-                            >
-                                <FormItem>
-                                    <FormLabel>Email</FormLabel>
-                                    <FormControl>
-                                        <Input id="email" type="email" v-model="form.email" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Email</label>
+                                <Input v-model="email" type="email" placeholder="Email" />
+                            </div>
 
                             <!-- Estado -->
-                            <FormField
-                                :validator="veeForm.getFieldState('estado')"
-                                name="estado"
-                                :server-error="form.errors.estado"
-                            >
-                                <FormItem>
-                                    <FormLabel>Estado *</FormLabel>
-                                    <FormControl>
-                                        <Select v-model="form.estado">
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecione um estado" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Ativo">Ativo</SelectItem>
-                                                <SelectItem value="Inativo">Inativo</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium">Estado</label>
+                                <div class="flex items-center space-x-4">
+                                    <label class="flex items-center space-x-2">
+                                        <input type="radio" v-model="estado" value="Ativo" class="rounded border-gray-300 text-primary focus:ring-primary" />
+                                        <span>Ativo</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="radio" v-model="estado" value="Inativo" class="rounded border-gray-300 text-primary focus:ring-primary" />
+                                        <span>Inativo</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Observações -->
-                        <FormField
-                            :validator="veeForm.getFieldState('observacoes')"
-                            name="observacoes"
-                            :server-error="form.errors.observacoes"
-                        >
-                            <FormItem>
-                                <FormLabel>Observações</FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                        id="observacoes"
-                                        v-model="form.observacoes"
-                                        rows="3"
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        </FormField>
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium">Observações</label>
+                            <Textarea v-model="observacoes" placeholder="Observações" rows="4" />
+                        </div>
 
-                        <CardFooter class="flex justify-end space-x-4 px-0 pb-0">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                :href="route('contactos.index')"
-                                as-child
-                            >
+                        <div class="flex justify-end space-x-2">
+                            <Button variant="outline" :href="route('contactos.index')" as-child>
                                 <a>Cancelar</a>
                             </Button>
-                            <Button type="submit" :disabled="form.processing">
+                            <Button type="submit" variant="default">
                                 <Save class="mr-2 h-4 w-4" />
                                 Salvar
                             </Button>
-                        </CardFooter>
-                    </Form>
+                        </div>
+                    </form>
                 </CardContent>
             </Card>
         </div>

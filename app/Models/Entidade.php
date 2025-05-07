@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
+use App\Models\Traits\BelongsToTenant;
 
 class Entidade extends Model
 {
-    use HasFactory, UsesTenantConnection;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'nome',
@@ -26,11 +26,6 @@ class Entidade extends Model
         'tenant_id',
     ];
 
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
-    }
-
     public function pais(): BelongsTo
     {
         return $this->belongsTo(Pais::class);
@@ -44,5 +39,18 @@ class Entidade extends Model
     public function atividades(): HasMany
     {
         return $this->hasMany(Atividade::class);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($entidade) {
+            // Primeiro deletar as atividades para evitar problemas de chave estrangeira
+            $entidade->atividades()->forceDelete();
+            
+            // Depois deletar os contatos
+            $entidade->contactos()->forceDelete();
+        });
     }
 }

@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Artisan;
 use Database\Seeders\AtividadeSeeder;
 use Database\Seeders\ContactoSeeder;
 use Database\Seeders\EntidadeSeeder;
+use Database\Seeders\FuncaoSeeder;
+use Database\Seeders\PaisSeeder;
+use Database\Seeders\TipoAtividadeSeeder;
+use Database\Seeders\UserSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -18,44 +22,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Executar os seeders na ordem correta
         $this->call([
-            TenantSeeder::class,
+            TenantSeeder::class,   // Primeiro criar os tenants
+            UserSeeder::class,     // Depois criar os usuários vinculados aos tenants
+            PaisSeeder::class,     // Adicionar países antes das entidades
+            FuncaoSeeder::class,   // Adicionar funções antes dos contactos
+            TipoAtividadeSeeder::class, // Adicionar tipos de atividade antes das atividades
             EntidadeSeeder::class,
             ContactoSeeder::class,
             AtividadeSeeder::class,
         ]);
-        
-        // Criar usuário administrador principal (landlord)
-        User::factory()->create([
-            'name' => 'Administrador',
-            'email' => 'admin@crm.com',
-        ]);
-
-        // Para cada tenant, executar o seeder de dados iniciais
-        $tenants = Tenant::all();
-        
-        foreach ($tenants as $tenant) {
-            // Fazer a migração do tenant
-            Artisan::call('tenants:artisan', [
-                'artisan_command' => 'migrate:fresh',
-                '--tenant' => $tenant->id,
-            ]);
-            
-            // Criar usuário admin para o tenant
-            Artisan::call('tenants:artisan', [
-                'artisan_command' => 'db:seed',
-                '--class' => 'DadosIniciaisSeeder',
-                '--tenant' => $tenant->id,
-            ]);
-            
-            // Criar usuário admin para o tenant
-            Artisan::call('tenants:artisan', [
-                'artisan_command' => 'user:create',
-                '--name' => "Admin {$tenant->name}",
-                '--email' => "admin@{$tenant->domain}",
-                '--password' => 'password',
-                '--tenant' => $tenant->id,
-            ]);
-        }
     }
 }

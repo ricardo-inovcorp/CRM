@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Entidade;
 use App\Models\Pais;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
@@ -18,12 +19,18 @@ class EntidadeController extends Controller
         $search = $request->input('search', '');
         $estado = $request->input('estado', '');
         
+        $user = Auth::user();
+        
         $entidades = Entidade::query()
             ->with('pais')
+            // Garantir explicitamente o filtro por tenant para usuários não-admin
+            ->when(!$user->is_admin && $user->tenant_id, function ($query) use ($user) {
+                $query->where('tenant_id', $user->tenant_id);
+            })
             ->when($search, function ($query, $search) {
                 $query->where('nome', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('telefone', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('telefone', 'like', "%{$search}%");
             })
             ->when($estado, function ($query, $estado) {
                 $query->where('estado', $estado);
@@ -71,7 +78,13 @@ class EntidadeController extends Controller
             'estado' => 'required|string|in:Ativo,Inativo',
         ]);
         
-        Entidade::create($validated);
+        // Garantir que temos dados válidos para o website
+        if (isset($validated['website']) && empty($validated['website'])) {
+            $validated['website'] = null;
+        }
+        
+        // O trait BelongsToTenant deve definir o tenant_id automaticamente
+        $entidade = Entidade::create($validated);
         
         return Redirect::route('entidades.index')
             ->with('success', 'Entidade criada com sucesso.');
@@ -120,10 +133,21 @@ class EntidadeController extends Controller
             'estado' => 'required|string|in:Ativo,Inativo',
         ]);
         
+        // Garantir que temos dados válidos para o website
+        if (isset($validated['website']) && empty($validated['website'])) {
+            $validated['website'] = null;
+        }
+        
         $entidade->update($validated);
         
-        return Redirect::route('entidades.show', $entidade)
-            ->with('success', 'Entidade atualizada com sucesso.');
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Entidade atualizada com sucesso.',
+                'entidade' => $entidade->fresh()
+            ]);
+        }
+        
+        return back()->with('success', 'Entidade atualizada com sucesso.');
     }
 
     /**
@@ -133,7 +157,12 @@ class EntidadeController extends Controller
     {
         $entidade->delete();
         
-        return Redirect::route('entidades.index')
-            ->with('success', 'Entidade excluída com sucesso.');
+        if (request()->wantsJson()) {
+            return response()->json([
+                'message' => 'Entidade excluída com sucesso.'
+            ]);
+        }
+        
+        return back()->with('success', 'Entidade excluída com sucesso.');
     }
 }

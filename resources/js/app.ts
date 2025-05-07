@@ -29,14 +29,14 @@ createInertiaApp({
     resolve: (name) => {
         console.log('Tentando resolver componente:', name);
         
-        // Importa todos os arquivos .vue dentro da pasta Pages
-        const pages = import.meta.glob('./Pages/**/*.vue', { eager: false });
+        // Importa todos os arquivos .vue dentro da pasta pages
+        const pages = import.meta.glob('./pages/**/*.vue', { eager: false });
         
         // Log dos componentes disponíveis
         console.log('Componentes disponíveis:', Object.keys(pages));
         
         // Constrói o caminho do componente e tenta resolvê-lo
-        const componentPath = `./Pages/${name}.vue`;
+        const componentPath = `./pages/${name}.vue`;
         console.log('Procurando componente em:', componentPath);
         
         try {

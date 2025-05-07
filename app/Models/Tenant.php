@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\Multitenancy\Models\Tenant as BaseTenant;
 
-class Tenant extends BaseTenant
+class Tenant extends Model
 {
     use HasFactory;
 
@@ -39,6 +39,11 @@ class Tenant extends BaseTenant
     public function atividades(): HasMany
     {
         return $this->hasMany(Atividade::class);
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
     }
 
     public function paises(): HasMany

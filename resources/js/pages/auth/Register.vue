@@ -1,83 +1,43 @@
-<script setup lang="ts">
-import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthBase from '@/layouts/AuthLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+<script setup>
+import AuthCardLayout from '@/layouts/auth/AuthCardLayout.vue'
+import { ref } from 'vue'
+import { router, Link } from '@inertiajs/vue3'
 
-const form = useForm({
-    name: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-});
+const form = ref({
+  name: '',
+  email: '',
+  password: '',
+  password_confirmation: ''
+})
 
-const submit = () => {
-    form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
-};
+function submit() {
+  router.post(route('register'), form.value)
+}
 </script>
 
 <template>
-    <AuthBase title="Create an account" description="Enter your details below to create your account">
-        <Head title="Register" />
-
-        <form @submit.prevent="submit" class="flex flex-col gap-6">
-            <div class="grid gap-6">
-                <div class="grid gap-2">
-                    <Label for="name">Name</Label>
-                    <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" v-model="form.name" placeholder="Full name" />
-                    <InputError :message="form.errors.name" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
-                    <Input id="email" type="email" required :tabindex="2" autocomplete="email" v-model="form.email" placeholder="email@example.com" />
-                    <InputError :message="form.errors.email" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="password">Password</Label>
-                    <Input
-                        id="password"
-                        type="password"
-                        required
-                        :tabindex="3"
-                        autocomplete="new-password"
-                        v-model="form.password"
-                        placeholder="Password"
-                    />
-                    <InputError :message="form.errors.password" />
-                </div>
-
-                <div class="grid gap-2">
-                    <Label for="password_confirmation">Confirm password</Label>
-                    <Input
-                        id="password_confirmation"
-                        type="password"
-                        required
-                        :tabindex="4"
-                        autocomplete="new-password"
-                        v-model="form.password_confirmation"
-                        placeholder="Confirm password"
-                    />
-                    <InputError :message="form.errors.password_confirmation" />
-                </div>
-
-                <Button type="submit" class="mt-2 w-full" tabindex="5" :disabled="form.processing">
-                    <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                    Create account
-                </Button>
-            </div>
-
-            <div class="text-center text-sm text-muted-foreground">
-                Already have an account?
-                <TextLink :href="route('login')" class="underline underline-offset-4" :tabindex="6">Log in</TextLink>
-            </div>
-        </form>
-    </AuthBase>
-</template>
+  <AuthCardLayout title="Criar conta" description="Preencha os dados para se registar.">
+    <form @submit.prevent="submit" class="space-y-6">
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Nome</label>
+        <input v-model="form.name" type="text" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" required />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Email</label>
+        <input v-model="form.email" type="email" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" required />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Senha</label>
+        <input v-model="form.password" type="password" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" required />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Confirmar Senha</label>
+        <input v-model="form.password_confirmation" type="password" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" required />
+      </div>
+      <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-lg font-semibold transition">Registar</button>
+      <div class="flex flex-col items-center gap-2 mt-4">
+        <Link :href="route('login')" class="text-sm text-primary hover:underline">Já tem conta? Entrar</Link>
+      </div>
+    </form>
+  </AuthCardLayout>
+</template> 

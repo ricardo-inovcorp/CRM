@@ -8,12 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, UsesTenantConnection;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -25,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'tenant_id',
+        'is_admin',
     ];
 
     /**
@@ -47,7 +47,19 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * Determine if the user is an administrator.
+     *
+     * @return bool
+     */
+    public function isAdmin(): bool
+    {
+        // Admin é o usuário com is_admin=true ou sem tenant_id (usuário global)
+        return $this->is_admin || $this->tenant_id === null;
     }
 
     public function tenant(): BelongsTo

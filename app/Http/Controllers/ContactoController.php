@@ -6,6 +6,7 @@ use App\Models\Contacto;
 use App\Models\Entidade;
 use App\Models\Funcao;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
@@ -17,30 +18,38 @@ class ContactoController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search', '');
-        $estado = $request->input('estado', '');
         $entidade_id = $request->input('entidade_id', '');
+        $estado = $request->input('estado', '');
+        
+        $user = Auth::user();
         
         $contactos = Contacto::query()
             ->with(['entidade', 'funcao'])
-            ->when($search, function ($query, $search) {
-                $query->where(function($q) use ($search) {
-                    $q->where('nome', 'like', "%{$search}%")
-                      ->orWhere('apelido', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('telefone', 'like', "%{$search}%")
-                      ->orWhere('telemovel', 'like', "%{$search}%");
-                });
+            // Garantir explicitamente o filtro por tenant para usuários não-admin
+            ->when(!$user->is_admin && $user->tenant_id, function ($query) use ($user) {
+                $query->where('tenant_id', $user->tenant_id);
             })
-            ->when($estado, function ($query, $estado) {
-                $query->where('estado', $estado);
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nome', 'like', "%{$search}%")
+                        ->orWhere('apelido', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('telefone', 'like', "%{$search}%")
+                        ->orWhere('telemovel', 'like', "%{$search}%");
+                });
             })
             ->when($entidade_id, function ($query, $entidade_id) {
                 $query->where('entidade_id', $entidade_id);
             })
+            ->when($estado, function ($query, $estado) {
+                $query->where('estado', $estado);
+            })
             ->orderBy('nome')
+            ->orderBy('apelido')
             ->paginate(10)
             ->withQueryString();
         
+        // Filtrar as entidades pelo tenant do usuário também
         $entidades = Entidade::orderBy('nome')->get(['id', 'nome']);
         
         return Inertia::render('contactos/Index', [
@@ -48,8 +57,8 @@ class ContactoController extends Controller
             'entidades' => $entidades,
             'filters' => [
                 'search' => $search,
-                'estado' => $estado,
                 'entidade_id' => $entidade_id,
+                'estado' => $estado,
             ],
         ]);
     }
@@ -137,8 +146,7 @@ class ContactoController extends Controller
         
         $contacto->update($validated);
         
-        return Redirect::route('contactos.show', $contacto)
-            ->with('success', 'Contacto atualizado com sucesso.');
+        return back()->with('success', 'Contacto atualizado com sucesso.');
     }
 
     /**
@@ -148,7 +156,6 @@ class ContactoController extends Controller
     {
         $contacto->delete();
         
-        return Redirect::route('contactos.index')
-            ->with('success', 'Contacto excluído com sucesso.');
+        return back()->with('success', 'Contacto excluído com sucesso.');
     }
 }

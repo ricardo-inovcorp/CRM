@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
+use App\Models\Traits\BelongsToTenant;
 
 class Atividade extends Model
 {
-    use HasFactory, UsesTenantConnection;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'data',
@@ -24,14 +24,9 @@ class Atividade extends Model
     ];
 
     protected $casts = [
-        'data' => 'date',
+        'data' => 'date:Y-m-d',
         'hora' => 'datetime:H:i',
     ];
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
-    }
 
     public function entidade(): BelongsTo
     {

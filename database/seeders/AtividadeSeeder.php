@@ -5,9 +5,12 @@ namespace Database\Seeders;
 use App\Models\Atividade;
 use App\Models\Contacto;
 use App\Models\Entidade;
+use App\Models\Tenant;
 use App\Models\TipoAtividade;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class AtividadeSeeder extends Seeder
 {
@@ -16,98 +19,86 @@ class AtividadeSeeder extends Seeder
      */
     public function run(): void
     {
-        // Criar tipos de atividade
-        $tiposAtividade = [
-            ['nome' => 'Reunião'],
-            ['nome' => 'Chamada'],
-            ['nome' => 'Email'],
-            ['nome' => 'Apresentação'],
-            ['nome' => 'Proposta'],
-        ];
-
-        foreach ($tiposAtividade as $tipo) {
-            TipoAtividade::firstOrCreate($tipo);
-        }
-
-        // Obter tipos de atividade criados
-        $reuniao = TipoAtividade::where('nome', 'Reunião')->first();
-        $chamada = TipoAtividade::where('nome', 'Chamada')->first();
-        $email = TipoAtividade::where('nome', 'Email')->first();
-        $proposta = TipoAtividade::where('nome', 'Proposta')->first();
-
-        // Obter entidades e contactos
-        $empresaABC = Entidade::where('nome', 'Empresa ABC')->first();
-        $consultoriaXYZ = Entidade::where('nome', 'Consultoria XYZ')->first();
-        $industriasLMN = Entidade::where('nome', 'Indústrias LMN')->first();
-
-        $joao = Contacto::where('email', 'joao.silva@empresaabc.pt')->first();
-        $antonio = Contacto::where('email', 'antonio.costa@xyz.pt')->first();
-        $paulo = Contacto::where('email', 'paulo.ferreira@lmn.pt')->first();
-
-        // Verificar se existem entidades e contactos necessários
-        if (!$empresaABC || !$consultoriaXYZ || !$industriasLMN || !$joao || !$antonio || !$paulo) {
-            $this->command->info('Por favor, execute primeiro o EntidadeSeeder e o ContactoSeeder');
+        // Tipos de atividade
+        $tipoReuniao = TipoAtividade::firstOrCreate(['nome' => 'Reunião']);
+        $tipoAlmoco = TipoAtividade::firstOrCreate(['nome' => 'Almoço de Negócios']);
+        $tipoEmail = TipoAtividade::firstOrCreate(['nome' => 'Email']);
+        $tipoChamada = TipoAtividade::firstOrCreate(['nome' => 'Chamada']);
+        $tipoTarefa = TipoAtividade::firstOrCreate(['nome' => 'Tarefa']);
+        
+        // Obter tenants
+        $tenants = Tenant::all();
+        
+        if ($tenants->isEmpty()) {
+            $this->command->info('Nenhum tenant encontrado. Execute primeiro o TenantSeeder.');
             return;
         }
-
-        // Criar atividades de exemplo
-        $atividades = [
-            [
-                'data' => now()->subDays(15)->format('Y-m-d'),
-                'hora' => '09:00',
-                'duracao' => 90, // 1h30min em minutos
-                'entidade_id' => $empresaABC->id,
-                'contacto_id' => $joao->id,
-                'tipo_id' => $reuniao->id,
-                'descricao' => 'Reunião inicial - Apresentação de serviços e identificação de necessidades',
-            ],
-            [
-                'data' => now()->subDays(10)->format('Y-m-d'),
-                'hora' => '14:00',
-                'duracao' => 60, // 1h em minutos
-                'entidade_id' => $empresaABC->id,
-                'contacto_id' => $joao->id,
-                'tipo_id' => $proposta->id,
-                'descricao' => 'Envio de proposta - Proposta comercial baseada na reunião inicial',
-            ],
-            [
-                'data' => now()->subDays(5)->format('Y-m-d'),
-                'hora' => '11:00',
-                'duracao' => 30, // 30min em minutos
-                'entidade_id' => $empresaABC->id,
-                'contacto_id' => $joao->id,
-                'tipo_id' => $chamada->id,
-                'descricao' => 'Chamada de follow-up - Verificar se receberam a proposta e esclarecer dúvidas',
-            ],
-            [
-                'data' => now()->addDays(3)->format('Y-m-d'),
-                'hora' => '10:00',
-                'duracao' => 90, // 1h30min em minutos
-                'entidade_id' => $consultoriaXYZ->id,
-                'contacto_id' => $antonio->id,
-                'tipo_id' => $reuniao->id,
-                'descricao' => 'Reunião com consultoria - Explorar possíveis parcerias',
-            ],
-            [
-                'data' => now()->subDays(2)->format('Y-m-d'),
-                'hora' => '15:00',
-                'duracao' => 30, // 30min em minutos
-                'entidade_id' => $industriasLMN->id,
-                'contacto_id' => $paulo->id,
-                'tipo_id' => $email->id,
-                'descricao' => 'Email de apresentação - Envio de informações sobre produtos e serviços',
-            ],
-        ];
-
-        foreach ($atividades as $atividade) {
-            Atividade::firstOrCreate(
-                [
-                    'data' => $atividade['data'],
-                    'entidade_id' => $atividade['entidade_id'],
-                    'hora' => $atividade['hora'],
-                ],
-                $atividade
-            );
+        
+        // Limpar atividades existentes
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        DB::table('atividade_participante')->delete();
+        DB::table('atividade_conhecimento')->delete();
+        DB::table('atividades')->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        
+        // Para cada tenant, criar suas próprias atividades
+        foreach ($tenants as $tenant) {
+            $this->command->info("Criando atividades para o tenant: {$tenant->name}");
+            
+            // Obter entidades, contatos e usuários deste tenant
+            $entidades = Entidade::where('tenant_id', $tenant->id)->get();
+            $contactos = Contacto::where('tenant_id', $tenant->id)->get();
+            $users = User::where('tenant_id', $tenant->id)->get();
+            
+            if ($entidades->isEmpty() || $contactos->isEmpty() || $users->isEmpty()) {
+                $this->command->info("Dados insuficientes para o tenant {$tenant->name}");
+                continue;
+            }
+            
+            // Tipos de atividade para variar os exemplos
+            $tipos = [$tipoReuniao, $tipoAlmoco, $tipoEmail, $tipoChamada, $tipoTarefa];
+            
+            // Para cada entidade, criar algumas atividades
+            foreach ($entidades as $index => $entidade) {
+                // Obter contatos desta entidade
+                $contatosEntidade = $contactos->where('entidade_id', $entidade->id);
+                
+                if ($contatosEntidade->isEmpty()) {
+                    continue;
+                }
+                
+                // Criar atividades de diferentes tipos
+                for ($i = 0; $i < 3; $i++) {
+                    $tipo = $tipos[array_rand($tipos)];
+                    $contacto = $contatosEntidade->random();
+                    $user = $users->random();
+                    
+                    // Criar a atividade
+                    $atividade = Atividade::create([
+                        'data' => now()->subDays(rand(1, 30))->format('Y-m-d'),
+                        'hora' => sprintf('%02d:%02d', rand(8, 18), rand(0, 59)),
+                        'duracao' => rand(15, 120),
+                        'entidade_id' => $entidade->id,
+                        'contacto_id' => $contacto->id,
+                        'tipo_id' => $tipo->id,
+                        'descricao' => "Atividade de {$tipo->nome} com {$contacto->nome} da {$entidade->nome}",
+                        'tenant_id' => $tenant->id,
+                    ]);
+                    
+                    // Adicionar participantes e conhecimento
+                    $atividade->participantes()->attach($user);
+                    
+                    // Adicionar outro usuário ao conhecimento (se houver mais de um)
+                    if ($users->count() > 1) {
+                        $outroUser = $users->where('id', '!=', $user->id)->first();
+                        $atividade->conhecimento()->attach($outroUser);
+                    }
+                }
+            }
+            
+            $this->command->info("Atividades criadas para o tenant {$tenant->name}");
         }
+        
+        $this->command->info('Todas as atividades foram criadas com sucesso!');
     }
 }

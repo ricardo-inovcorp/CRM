@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
+use App\Models\Traits\BelongsToTenant;
 
 class Contacto extends Model
 {
-    use HasFactory, UsesTenantConnection;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'nome',
@@ -24,11 +24,6 @@ class Contacto extends Model
         'estado',
         'tenant_id',
     ];
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
-    }
 
     public function entidade(): BelongsTo
     {
@@ -48,5 +43,15 @@ class Contacto extends Model
     public function nomeCompleto(): string
     {
         return $this->nome . ' ' . $this->apelido;
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($contacto) {
+            // Deletar todas as atividades relacionadas
+            $contacto->atividades()->forceDelete();
+        });
     }
 }

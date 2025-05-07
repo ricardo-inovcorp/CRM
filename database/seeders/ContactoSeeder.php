@@ -5,8 +5,10 @@ namespace Database\Seeders;
 use App\Models\Contacto;
 use App\Models\Entidade;
 use App\Models\Funcao;
+use App\Models\Tenant;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class ContactoSeeder extends Seeder
 {
@@ -15,87 +17,53 @@ class ContactoSeeder extends Seeder
      */
     public function run(): void
     {
-        // Criando funções de exemplo
-        $funcoes = [
-            ['nome' => 'Diretor Geral'],
-            ['nome' => 'Gerente'],
-            ['nome' => 'Comercial'],
-            ['nome' => 'Técnico'],
-            ['nome' => 'Administrativo'],
-        ];
-
-        foreach ($funcoes as $funcao) {
-            Funcao::firstOrCreate($funcao);
-        }
-
-        // Obter funções e entidades existentes
-        $diretorGeral = Funcao::where('nome', 'Diretor Geral')->first();
-        $gerente = Funcao::where('nome', 'Gerente')->first();
-        $comercial = Funcao::where('nome', 'Comercial')->first();
-
-        $empresaABC = Entidade::where('nome', 'Empresa ABC')->first();
-        $consultoriaXYZ = Entidade::where('nome', 'Consultoria XYZ')->first();
-        $industriasLMN = Entidade::where('nome', 'Indústrias LMN')->first();
-
-        // Garantir que as entidades existem
-        if (!$empresaABC || !$consultoriaXYZ || !$industriasLMN) {
-            $this->command->info('Por favor, execute primeiro o EntidadeSeeder');
+        // Obter uma função (exemplo: Diretor)
+        $funcao = Funcao::firstOrCreate(['nome' => 'Diretor']);
+        
+        // Pegar todos os tenants
+        $tenants = Tenant::all();
+        
+        if ($tenants->isEmpty()) {
+            $this->command->info('Nenhum tenant encontrado. Seeders devem ser executados na ordem correta.');
             return;
         }
-
-        // Criar contactos de exemplo
-        $contactos = [
-            [
-                'nome' => 'João',
-                'apelido' => 'Silva',
-                'entidade_id' => $empresaABC->id,
-                'funcao_id' => $diretorGeral->id,
-                'telefone' => '212345678',
-                'telemovel' => '912345678',
-                'email' => 'joao.silva@empresaabc.pt',
-                'observacoes' => 'Contacto principal',
-                'estado' => 'Ativo',
-            ],
-            [
-                'nome' => 'Maria',
-                'apelido' => 'Santos',
-                'entidade_id' => $empresaABC->id,
-                'funcao_id' => $comercial->id,
-                'telefone' => '212345679',
-                'telemovel' => '923456789',
-                'email' => 'maria.santos@empresaabc.pt',
-                'observacoes' => 'Departamento comercial',
-                'estado' => 'Ativo',
-            ],
-            [
-                'nome' => 'António',
-                'apelido' => 'Costa',
-                'entidade_id' => $consultoriaXYZ->id,
-                'funcao_id' => $gerente->id,
-                'telefone' => '213456780',
-                'telemovel' => '934567890',
-                'email' => 'antonio.costa@xyz.pt',
-                'observacoes' => 'Contacto preferencial',
-                'estado' => 'Ativo',
-            ],
-            [
-                'nome' => 'Paulo',
-                'apelido' => 'Ferreira',
-                'entidade_id' => $industriasLMN->id,
-                'funcao_id' => $diretorGeral->id,
-                'telefone' => '253123457',
-                'telemovel' => '961234567',
-                'email' => 'paulo.ferreira@lmn.pt',
-                'observacoes' => 'Decisor principal',
-                'estado' => 'Inativo',
-            ],
-        ];
-
-        foreach ($contactos as $contacto) {
-            Contacto::firstOrCreate(
-                ['email' => $contacto['email']],
-                $contacto
-            );
+        
+        // Limpar contactos existentes
+        DB::table('contactos')->delete();
+        
+        // Para cada tenant, criar contatos para suas entidades
+        foreach ($tenants as $tenant) {
+            $this->command->info("Criando contactos para o tenant: {$tenant->name}");
+            
+            // Obter entidades deste tenant
+            $entidades = Entidade::where('tenant_id', $tenant->id)->get();
+            
+            if ($entidades->isEmpty()) {
+                $this->command->info("Nenhuma entidade encontrada para o tenant {$tenant->name}");
+                continue;
+            }
+            
+            foreach ($entidades as $entidade) {
+                // Criar vários contatos para cada entidade
+                for ($i = 1; $i <= 3; $i++) {
+                    Contacto::create([
+                        'nome' => "Contato {$i}",
+                        'apelido' => "Sobrenome {$i}",
+                        'entidade_id' => $entidade->id,
+                        'funcao_id' => $funcao->id,
+                        'telefone' => "21{$i}000000",
+                        'telemovel' => "91{$i}000000",
+                        'email' => "contato{$i}@" . strtolower(str_replace(' ', '', $entidade->nome)) . ".pt",
+                        'observacoes' => "Contato de teste {$i} para {$entidade->nome}",
+                        'estado' => 'Ativo',
+                        'tenant_id' => $tenant->id, // Garantir que o tenant_id é definido
+                    ]);
+                }
+            }
+            
+            $this->command->info("Contactos criados para o tenant {$tenant->name}");
         }
+        
+        $this->command->info('Todos os contactos foram criados com sucesso!');
     }
 }

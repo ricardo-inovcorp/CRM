@@ -46,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('contactos', ContactoController::class);
     
     // Atividades
+    Route::get('atividades/get-contacts', [AtividadeController::class, 'getContacts'])->name('atividades.getContacts');
     Route::resource('atividades', AtividadeController::class);
     
     // Configurações

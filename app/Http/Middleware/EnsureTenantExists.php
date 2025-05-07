@@ -18,10 +18,10 @@ class EnsureTenantExists
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            // Comentando temporariamente esta verificação para permitir acesso
-            // if (! Tenant::checkCurrent()) {
-            //     return redirect('/');
-            // }
+            // Verificar se existe um tenant atual
+            if (! Tenant::checkCurrent()) {
+                return redirect('/');
+            }
             return $next($request);
         } catch (NoCurrentTenant) {
             return redirect('/');

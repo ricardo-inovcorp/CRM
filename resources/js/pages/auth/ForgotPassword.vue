@@ -1,54 +1,39 @@
-<script setup lang="ts">
-import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/AuthLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
-import { LoaderCircle } from 'lucide-vue-next';
+<script setup>
+import AuthCardLayout from '@/layouts/auth/AuthCardLayout.vue'
+import { ref } from 'vue'
+import { router, Link } from '@inertiajs/vue3'
 
-defineProps<{
-    status?: string;
-}>();
+const form = ref({
+  email: ''
+})
+const status = ref('')
+const errors = ref({})
 
-const form = useForm({
-    email: '',
-});
-
-const submit = () => {
-    form.post(route('password.email'));
-};
+function submit() {
+  router.post(route('password.email'), form.value, {
+    onSuccess: (page) => {
+      status.value = page.props.status || 'Se o email estiver registado, um link de recuperação foi enviado.'
+    },
+    onError: (err) => {
+      errors.value = err
+    }
+  })
+}
 </script>
 
 <template>
-    <AuthLayout title="Forgot password" description="Enter your email to receive a password reset link">
-        <Head title="Forgot password" />
-
-        <div v-if="status" class="mb-4 text-center text-sm font-medium text-green-600">
-            {{ status }}
-        </div>
-
-        <div class="space-y-6">
-            <form @submit.prevent="submit">
-                <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
-                    <Input id="email" type="email" name="email" autocomplete="off" v-model="form.email" autofocus placeholder="email@example.com" />
-                    <InputError :message="form.errors.email" />
-                </div>
-
-                <div class="my-6 flex items-center justify-start">
-                    <Button class="w-full" :disabled="form.processing">
-                        <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                        Email password reset link
-                    </Button>
-                </div>
-            </form>
-
-            <div class="space-x-1 text-center text-sm text-muted-foreground">
-                <span>Or, return to</span>
-                <TextLink :href="route('login')">log in</TextLink>
-            </div>
-        </div>
-    </AuthLayout>
-</template>
+  <AuthCardLayout title="Recuperar senha" description="Informe seu email para receber o link de recuperação.">
+    <form @submit.prevent="submit" class="space-y-6">
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Email</label>
+        <input v-model="form.email" type="email" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" required />
+        <div v-if="errors.email" class="text-sm text-red-500 mt-1">{{ errors.email }}</div>
+      </div>
+      <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-gray-900 py-2 rounded-lg font-semibold transition">Enviar link de recuperação</button>
+      <div v-if="status" class="text-green-600 text-center mt-2">{{ status }}</div>
+      <div class="flex flex-col items-center gap-2 mt-4">
+        <Link :href="route('login')" class="text-sm text-primary hover:underline">Voltar ao login</Link>
+      </div>
+    </form>
+  </AuthCardLayout>
+</template> 

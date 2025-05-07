@@ -4,8 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Entidade;
 use App\Models\Pais;
+use App\Models\Tenant;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class EntidadeSeeder extends Seeder
 {
@@ -16,9 +18,21 @@ class EntidadeSeeder extends Seeder
     {
         // Obter um país (Portugal, por exemplo)
         $pais = Pais::firstOrCreate(['nome' => 'Portugal']);
-
-        // Criar entidades de exemplo
-        $entidades = [
+        
+        // Pegar todos os tenants para criar entidades para cada um
+        $tenants = Tenant::all();
+        
+        // Se não houver tenants, não há como prosseguir
+        if ($tenants->isEmpty()) {
+            $this->command->info('Nenhum tenant encontrado. Execute TenantSeeder primeiro.');
+            return;
+        }
+        
+        // Limpar entidades existentes
+        DB::table('entidades')->delete();
+        
+        // Dados base das entidades
+        $entidadesBase = [
             [
                 'nome' => 'Empresa ABC',
                 'morada' => 'Rua Principal, 123',
@@ -57,8 +71,20 @@ class EntidadeSeeder extends Seeder
             ],
         ];
 
-        foreach ($entidades as $entidade) {
-            Entidade::firstOrCreate(['nome' => $entidade['nome']], $entidade);
+        // Para cada tenant, criar suas próprias entidades
+        foreach ($tenants as $tenant) {
+            $this->command->info("Criando entidades para o tenant: {$tenant->name}");
+            
+            foreach ($entidadesBase as $index => $entidade) {
+                // Adicionar o tenant_id e um sufixo para diferenciar
+                $entidade['tenant_id'] = $tenant->id;
+                $entidade['nome'] = $entidade['nome'] . ' - ' . $tenant->name;
+                $entidade['email'] = str_replace('@', '-' . $tenant->id . '@', $entidade['email']);
+                
+                Entidade::create($entidade);
+            }
         }
+        
+        $this->command->info('Entidades criadas com sucesso para todos os tenants!');
     }
 }

@@ -25,8 +25,14 @@ class AtividadeController extends Controller
         $data_inicio = $request->input('data_inicio', '');
         $data_fim = $request->input('data_fim', '');
         
+        $user = Auth::user();
+        
         $atividades = Atividade::query()
             ->with(['entidade', 'contacto', 'tipo', 'participantes', 'conhecimento'])
+            // Garantir explicitamente o filtro por tenant para usuários não-admin
+            ->when(!$user->is_admin && $user->tenant_id, function ($query) use ($user) {
+                $query->where('tenant_id', $user->tenant_id);
+            })
             ->when($search, function ($query, $search) {
                 $query->where('descricao', 'like', "%{$search}%")
                       ->orWhereHas('entidade', function ($q) use ($search) {
@@ -54,6 +60,7 @@ class AtividadeController extends Controller
             ->paginate(10)
             ->withQueryString();
         
+        // Obter apenas entidades do tenant do usuário
         $entidades = Entidade::orderBy('nome')->get(['id', 'nome']);
         $tipos = TipoAtividade::orderBy('nome')->get(['id', 'nome']);
         
@@ -96,22 +103,48 @@ class AtividadeController extends Controller
         $validated = $request->validate([
             'data' => 'required|date',
             'hora' => 'required',
-            'duracao' => 'nullable|integer|min:1',
+            'duracao' => 'nullable|integer|min:0',
             'entidade_id' => 'required|exists:entidades,id',
             'contacto_id' => 'nullable|exists:contactos,id',
+            'contacto_nome' => 'nullable|string',
             'tipo_id' => 'required|exists:tipos_atividade,id',
-            'descricao' => 'nullable|string',
+            'descricao' => 'required|string',
             'participantes' => 'nullable|array',
-            'participantes.*' => 'exists:users,id',
-            'conhecimento' => 'nullable|array',
-            'conhecimento.*' => 'exists:users,id',
+            'participantes.*' => 'nullable|exists:users,id',
         ]);
         
         // Remover arrays de participantes para criar a atividade
         $participantes = $validated['participantes'] ?? [];
-        $conhecimento = $validated['conhecimento'] ?? [];
+        unset($validated['participantes']);
         
-        unset($validated['participantes'], $validated['conhecimento']);
+        // Se um contacto não foi selecionado pelo ID mas um nome foi fornecido
+        if (empty($validated['contacto_id']) && !empty($validated['contacto_nome']) && !empty($validated['entidade_id'])) {
+            // Verificar se existe um contacto com este nome na entidade
+            $contacto = Contacto::where('nome', 'like', '%' . $validated['contacto_nome'] . '%')
+                ->where('entidade_id', $validated['entidade_id'])
+                ->first();
+                
+            if ($contacto) {
+                $validated['contacto_id'] = $contacto->id;
+            } else {
+                // Criar um novo contacto (apenas com o nome)
+                $nomes = explode(' ', $validated['contacto_nome']);
+                $nome = $nomes[0];
+                $apelido = count($nomes) > 1 ? implode(' ', array_slice($nomes, 1)) : '';
+                
+                $contacto = Contacto::create([
+                    'nome' => $nome,
+                    'apelido' => $apelido,
+                    'entidade_id' => $validated['entidade_id'],
+                    'estado' => 'Ativo',
+                ]);
+                
+                $validated['contacto_id'] = $contacto->id;
+            }
+        }
+        
+        // Remover o campo contacto_nome que não existe na tabela atividades
+        unset($validated['contacto_nome']);
         
         // Criar a atividade
         $atividade = Atividade::create($validated);
@@ -119,11 +152,6 @@ class AtividadeController extends Controller
         // Anexar participantes
         if (!empty($participantes)) {
             $atividade->participantes()->attach($participantes);
-        }
-        
-        // Anexar conhecimento
-        if (!empty($conhecimento)) {
-            $atividade->conhecimento()->attach($conhecimento);
         }
         
         return Redirect::route('atividades.index')
@@ -206,8 +234,7 @@ class AtividadeController extends Controller
         // Sincronizar conhecimento
         $atividade->conhecimento()->sync($conhecimento);
         
-        return Redirect::route('atividades.show', $atividade)
-            ->with('success', 'Atividade atualizada com sucesso.');
+        return back()->with('success', 'Atividade atualizada com sucesso.');
     }
 
     /**
@@ -228,11 +255,19 @@ class AtividadeController extends Controller
     {
         $entidade_id = $request->input('entidade_id');
         
-        $contactos = Contacto::where('entidade_id', $entidade_id)
-            ->where('estado', 'Ativo')
-            ->orderBy('nome')
-            ->get(['id', 'nome', 'apelido']);
+        if (!$entidade_id) {
+            return response()->json(['error' => 'ID da entidade não fornecido'], 400);
+        }
         
-        return response()->json($contactos);
+        try {
+            $contactos = Contacto::where('entidade_id', $entidade_id)
+                ->where('estado', 'Ativo')
+                ->orderBy('nome')
+                ->get(['id', 'nome', 'apelido']);
+            
+            return response()->json($contactos);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro ao buscar contactos: ' . $e->getMessage()], 500);
+        }
     }
 }
