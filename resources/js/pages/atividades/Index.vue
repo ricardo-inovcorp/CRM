@@ -152,7 +152,7 @@ const formatDuracao = (minutos: number | null | undefined) => {
         <div class="p-6">
             <div class="mb-6 flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Atividades</h1>
-                <a :href="route('atividades.create')" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                <a :href="route('atividades.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
                     Nova Atividade
                 </a>
             </div>
@@ -186,7 +186,7 @@ const formatDuracao = (minutos: number | null | undefined) => {
                                     <td class="px-4 py-4 whitespace-nowrap text-gray-200">{{ atividade.tipo?.nome || '—' }}</td>
                                     <td class="px-4 py-4 max-w-xs truncate text-gray-200">{{ atividade.descricao || '—' }}</td>
                                     <td class="px-4 py-4 whitespace-nowrap text-center">
-                                        <div class="flex items-center justify-center gap-2">
+                                        <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
                                             <button @click.stop="openEdit(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
                                                 <Pencil class="w-5 h-5 text-primary" />
                                             </button>

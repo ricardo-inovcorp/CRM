@@ -36,32 +36,12 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Configurações',
-        href: '#',
+        href: '/settings/profile',
         icon: Cog,
-        children: [
-            {
-                title: 'Países',
-                href: '/configuracoes/paises',
-            },
-            {
-                title: 'Funções',
-                href: '/configuracoes/funcoes',
-            },
-            {
-                title: 'Tipos de Atividade',
-                href: '/configuracoes/tipos-atividade',
-            },
-        ],
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Documentação',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
+
 </script>
 
 <template>

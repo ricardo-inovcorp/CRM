@@ -111,7 +111,7 @@ function submitDelete() {
         <div class="p-6">
             <div class="mb-6 flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Entidades</h1>
-                <a :href="route('entidades.create')" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
+                <a :href="route('entidades.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
                     Nova Entidade
                 </a>
             </div>
@@ -279,4 +279,4 @@ function submitDelete() {
             </Dialog>
         </div>
     </AppLayout>
-</template> 
+</template>
