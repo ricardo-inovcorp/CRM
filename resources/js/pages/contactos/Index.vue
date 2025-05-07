@@ -139,7 +139,7 @@ function submitDelete() {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-700">
-                                <tr v-for="contacto in contactos.data" :key="contacto.id" class="hover:bg-zinc-700 transition group">
+                                <tr v-for="contacto in contactos.data" :key="contacto.id" class="hover:bg-zinc-700 transition group cursor-pointer" @click="() => router.visit(route('contactos.show', contacto.id))">
                                     <td class="px-6 py-4 whitespace-nowrap text-gray-200">{{ contacto.nome }} {{ contacto.apelido }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-gray-200">{{ contacto.entidade?.nome || '—' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-gray-200">{{ contacto.telefone || '—' }}</td>
@@ -152,10 +152,10 @@ function submitDelete() {
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                                            <button @click="openEdit(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
+                                            <button @click.stop="openEdit(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
                                                 <Pencil class="w-5 h-5 text-primary" />
                                             </button>
-                                            <button @click="openDelete(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
+                                            <button @click.stop="openDelete(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
                                                 <Trash2 class="w-5 h-5 text-red-500" />
                                             </button>
                                         </div>

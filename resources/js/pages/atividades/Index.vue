@@ -177,7 +177,7 @@ const formatDuracao = (minutos: number | null | undefined) => {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-700">
-                                <tr v-for="atividade in atividades.data" :key="atividade.id" class="hover:bg-zinc-700 transition">
+                                <tr v-for="atividade in atividades.data" :key="atividade.id" class="hover:bg-zinc-700 transition cursor-pointer group" @click="() => router.visit(route('atividades.show', atividade.id))">
                                     <td class="px-4 py-4 whitespace-nowrap text-gray-200">{{ formatData(atividade.data) }}</td>
                                     <td class="px-4 py-4 whitespace-nowrap text-gray-200">{{ formatHora(atividade.hora) }}</td>
                                     <td class="px-4 py-4 whitespace-nowrap text-gray-200">{{ formatDuracao(atividade.duracao) }}</td>
@@ -187,10 +187,10 @@ const formatDuracao = (minutos: number | null | undefined) => {
                                     <td class="px-4 py-4 max-w-xs truncate text-gray-200">{{ atividade.descricao || '—' }}</td>
                                     <td class="px-4 py-4 whitespace-nowrap text-center">
                                         <div class="flex items-center justify-center gap-2">
-                                            <button @click="openEdit(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
+                                            <button @click.stop="openEdit(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
                                                 <Pencil class="w-5 h-5 text-primary" />
                                             </button>
-                                            <button @click="openDelete(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
+                                            <button @click.stop="openDelete(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
                                                 <Trash2 class="w-5 h-5 text-red-500" />
                                             </button>
                                         </div>
