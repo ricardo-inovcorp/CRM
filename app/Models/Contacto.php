@@ -40,6 +40,11 @@ class Contacto extends Model
         return $this->hasMany(Atividade::class);
     }
 
+    public function negocios(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Negocio::class, 'negocio_contacto', 'contacto_id', 'negocio_id');
+    }
+
     public function nomeCompleto(): string
     {
         return $this->nome . ' ' . $this->apelido;

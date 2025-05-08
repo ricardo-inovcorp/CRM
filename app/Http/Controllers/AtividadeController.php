@@ -154,7 +154,7 @@ class AtividadeController extends Controller
             $atividade->participantes()->attach($participantes);
         }
         
-        return Redirect::route('atividades.index')
+        return Redirect::route('calendario.index')
             ->with('success', 'Atividade criada com sucesso.');
     }
 

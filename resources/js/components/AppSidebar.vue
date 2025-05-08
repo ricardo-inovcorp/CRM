@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BarChart2, BookOpen, Briefcase, Calendar, Cog, Folder, LayoutGrid, Users } from 'lucide-vue-next';
+import { BarChart2, BookOpen, Briefcase, Calendar, Cog, Folder, LayoutGrid, Users, Building2 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -17,7 +17,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Entidades',
         href: '/entidades',
-        icon: Briefcase,
+        icon: Building2,
     },
     {
         title: 'Contactos',
@@ -26,8 +26,13 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Atividades',
-        href: '/atividades',
+        href: route('calendario.index'),
         icon: Calendar,
+    },
+    {
+        title: 'Negócios',
+        href: '/negocios',
+        icon: Briefcase,
     },
     {
         title: 'Relatórios',
