@@ -7,7 +7,11 @@ const form = ref({
   name: '',
   email: '',
   password: '',
-  password_confirmation: ''
+  password_confirmation: '',
+  nome_empresa: '',
+  nif: '',
+  morada: '',
+  telefone: ''
 })
 
 function submit() {
@@ -25,6 +29,22 @@ function submit() {
       <div>
         <label class="block mb-1 text-sm font-medium text-foreground">Email</label>
         <input v-model="form.email" type="email" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" required />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Empresa</label>
+        <input v-model="form.nome_empresa" type="text" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" required />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">NIF</label>
+        <input v-model="form.nif" type="text" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Morada</label>
+        <input v-model="form.morada" type="text" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" />
+      </div>
+      <div>
+        <label class="block mb-1 text-sm font-medium text-foreground">Telefone</label>
+        <input v-model="form.telefone" type="text" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white" />
       </div>
       <div>
         <label class="block mb-1 text-sm font-medium text-foreground">Senha</label>

@@ -15,6 +15,8 @@ use App\Http\Controllers\FuncaoController;
 use App\Http\Controllers\PaisController;
 use App\Http\Controllers\TipoAtividadeController;
 use App\Http\Controllers\NegocioController;
+use App\Http\Controllers\UserController;
+use App\Http\Middleware\CheckRole;
 
 Route::middleware('guest')->group(function () {
     Route::get('/', function () {
@@ -51,7 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('ErrorTest');
     })->name('error.test');
 
-    // Rotas CRM (removendo temporariamente o middleware tenant)
+    // Rotas CRM
     // Entidades
     Route::resource('entidades', EntidadeController::class);
     
@@ -79,6 +81,106 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Negócios
     Route::resource('negocios', NegocioController::class);
+
+    // Direct test route for users page
+    Route::get('/users-test', function () {
+        $users = \App\Models\User::with('roles')->where('tenant_id', \Illuminate\Support\Facades\Auth::user()->tenant_id)->get();
+        $roles = \App\Models\Role::all();
+        
+        \Illuminate\Support\Facades\Log::info('Direct test route - Users count: ' . $users->count());
+        
+        return \Inertia\Inertia::render('users/Index', [
+            'users' => $users,
+            'roles' => $roles,
+        ]);
+    })->name('users.test');
+
+    // Rotas de gestão de usuários (sem middleware de verificação de role)
+    Route::resource('users', UserController::class);
+
+    // Direct route to UserController for debugging
+    Route::get('/users-debug', [UserController::class, 'debug'])->name('users.debug');
+
+    // Debug route to check middleware
+    Route::get('/users-middleware', function () {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        return response()->json([
+            'message' => 'Middleware check passed',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'is_admin' => $user->isAdmin(),
+            'roles' => $user->roles->pluck('slug'),
+        ]);
+    })->name('users.middleware');
+
+    // Route info debug - does not require auth
+    Route::get('/routes-debug', function () {
+        return response()->json([
+            'routes' => [
+                'users.index' => route('users.index'),
+                'users.create' => route('users.create'),
+                'users.edit' => route('users.edit', ['user' => 1]),
+                'users.show' => route('users.show', ['user' => 1]),
+                'users.destroy' => route('users.destroy', ['user' => 1]),
+                'users.test' => route('users.test'),
+                'users.debug' => route('users.debug'),
+                'users.middleware' => route('users.middleware'),
+            ],
+        ]);
+    })->name('routes.debug');
+
+    // Most basic test route for debugging
+    Route::get('/simple-debug', function () {
+        $users = \App\Models\User::with('roles')->where('tenant_id', \Illuminate\Support\Facades\Auth::user()->tenant_id)->get();
+        $roles = \App\Models\Role::all();
+        
+        // Usar lowercase em vez de uppercase
+        return \Inertia\Inertia::render('users/Debug', [
+            'users' => $users,
+            'roles' => $roles,
+        ]);
+    })->name('users.simple-debug');
+    
+    // Try the lowercase path version
+    Route::get('/simple-debug-lowercase', function () {
+        $users = \App\Models\User::with('roles')->where('tenant_id', \Illuminate\Support\Facades\Auth::user()->tenant_id)->get();
+        $roles = \App\Models\Role::all();
+        
+        return \Inertia\Inertia::render('users/Debug', [
+            'users' => $users,
+            'roles' => $roles,
+        ]);
+    })->name('users.simple-debug-lowercase');
+
+    // Direct test with minimal components
+    Route::get('/direct-test', function () {
+        return \Inertia\Inertia::render('DirectTest');
+    })->name('direct.test');
+
+    // Direct users route without controller
+    Route::get('/users-direct', function () {
+        $users = \App\Models\User::with('roles')->where('tenant_id', \Illuminate\Support\Facades\Auth::user()->tenant_id)->get();
+        $roles = \App\Models\Role::all();
+        
+        return \Inertia\Inertia::render('users/Index', [
+            'users' => $users,
+            'roles' => $roles,
+        ]);
+    })->name('users.direct');
+
+    // Direct route with no role checks - for testing only
+    Route::get('/users-bypass', function () {
+        $users = \App\Models\User::with('roles')->get(); // Get all users without tenant filtering
+        $roles = \App\Models\Role::all();
+        
+        return \Inertia\Inertia::render('users/Index', [
+            'users' => $users,
+            'roles' => $roles,
+        ]);
+    })->name('users.bypass');
 });
 
 require __DIR__.'/settings.php';

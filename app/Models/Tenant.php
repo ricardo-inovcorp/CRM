@@ -11,14 +11,10 @@ class Tenant extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'domain',
-        'database',
-        'logo',
-        'email',
+        'nome',
+        'nif',
+        'morada',
         'telefone',
-        'active',
-        'trial_ends_at',
     ];
 
     protected $casts = [

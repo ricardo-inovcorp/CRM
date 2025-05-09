@@ -7,6 +7,8 @@ use App\Models\TipoNegocio;
 use App\Models\Entidade;
 use App\Models\Contacto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
@@ -14,7 +16,27 @@ class NegocioController extends Controller
 {
     public function index()
     {
-        $negocios = Negocio::with(['tipo', 'entidade', 'contactos'])->paginate(15);
+        // Usar eager loading com queries mais específicas
+        $negocios = Negocio::with([
+            'tipo', 
+            'entidade',
+            'contactos' => function($query) {
+                // Usar o qualificador da tabela para evitar ambiguidade
+                $query->select('contactos.*')
+                      ->where(function($q) {
+                          $q->where('contactos.tenant_id', Auth::user()->tenant_id)
+                            ->orWhereNull('contactos.tenant_id');
+                      });
+            }
+        ])->paginate(15);
+        
+        // Log para debug
+        Log::info('Listando negócios', [
+            'total' => $negocios->total(),
+            'tenant_id' => Auth::user()->tenant_id,
+            'ids' => $negocios->items() ? collect($negocios->items())->pluck('id') : []
+        ]);
+        
         $tipos = TipoNegocio::orderBy('nome')->get();
         $entidades = Entidade::orderBy('nome')->get();
         $contactos = Contacto::orderBy('nome')->get();
@@ -54,6 +76,16 @@ class NegocioController extends Controller
             'contactos.*' => 'exists:contactos,id',
         ]);
 
+        // Adicionar o tenant_id explicitamente
+        $validated['tenant_id'] = Auth::user()->tenant_id;
+        
+        // Log para debug
+        Log::info('Criando negócio', [
+            'dados' => $validated,
+            'usuario' => Auth::user()->id,
+            'tenant' => Auth::user()->tenant_id
+        ]);
+
         $negocio = Negocio::create($validated);
         if (!empty($validated['contactos'])) {
             $negocio->contactos()->sync($validated['contactos']);
@@ -64,7 +96,18 @@ class NegocioController extends Controller
 
     public function show(Negocio $negocio)
     {
-        $negocio->load(['tipo', 'entidade', 'contactos']);
+        $negocio->load([
+            'tipo', 
+            'entidade',
+            'contactos' => function($query) {
+                $query->select('contactos.*')
+                      ->where(function($q) {
+                          $q->where('contactos.tenant_id', Auth::user()->tenant_id)
+                            ->orWhereNull('contactos.tenant_id');
+                      });
+            }
+        ]);
+        
         return Inertia::render('negocios/Show', [
             'negocio' => $negocio,
         ]);
@@ -76,7 +119,17 @@ class NegocioController extends Controller
         $entidades = Entidade::orderBy('nome')->get();
         $contactos = Contacto::orderBy('nome')->get();
         $estados = Negocio::ESTADOS;
-        $negocio->load('contactos');
+        
+        $negocio->load([
+            'contactos' => function($query) {
+                $query->select('contactos.*')
+                      ->where(function($q) {
+                          $q->where('contactos.tenant_id', Auth::user()->tenant_id)
+                            ->orWhereNull('contactos.tenant_id');
+                      });
+            }
+        ]);
+        
         return Inertia::render('negocios/Edit', [
             'negocio' => $negocio,
             'tipos' => $tipos,
@@ -93,7 +146,15 @@ class NegocioController extends Controller
             $validated = $request->validate([
                 'estado' => 'required|in:' . implode(',', Negocio::ESTADOS),
             ]);
+            
             $negocio->update($validated);
+            
+            // Verificar se a requisição espera uma resposta Inertia (do formulário modal)
+            if ($request->header('X-Inertia')) {
+                return Redirect::route('negocios.index');
+            }
+            
+            // Caso contrário, retornar JSON para requisições de API (kanban)
             return response()->json(['success' => true, 'negocio' => $negocio->fresh()]);
         }
 

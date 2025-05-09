@@ -14,6 +14,7 @@ use Database\Seeders\FuncaoSeeder;
 use Database\Seeders\PaisSeeder;
 use Database\Seeders\TipoAtividadeSeeder;
 use Database\Seeders\UserSeeder;
+use Database\Seeders\RoleSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,8 +23,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Executar os seeders na ordem correta
+        // Chamar outros seeders
         $this->call([
+            RoleSeeder::class,
             TenantSeeder::class,   // Primeiro criar os tenants
             UserSeeder::class,     // Depois criar os usuários vinculados aos tenants
             PaisSeeder::class,     // Adicionar países antes das entidades

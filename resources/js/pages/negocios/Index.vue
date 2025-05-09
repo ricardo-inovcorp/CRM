@@ -19,6 +19,9 @@ const props = defineProps({
   estados: Array,
 });
 
+// Dados de depuração para verificar o que está sendo recebido do servidor
+console.log('Negócios recebidos do servidor:', props.negocios);
+
 const showEditModal = ref(false);
 const negocioEdit = ref(null);
 const editForm = ref({
@@ -34,20 +37,26 @@ const saving = ref(false);
 const viewMode = ref('table'); // 'table' or 'kanban'
 
 // Estado local dos negócios
-const localNegocios = ref(props.negocios.data || []);
+const localNegocios = ref([]);
 // Usar um array simples para rastrear mudanças pendentes
 const pendingChanges = ref([]);
 const isUpdating = ref(false);
+
+// Inicializar o estado local imediatamente
+localNegocios.value = props.negocios?.data || [];
+console.log('Estado local inicializado com', localNegocios.value.length, 'negócios');
 
 // Verificar se temos mudanças pendentes
 const hasPendingChanges = computed(() => pendingChanges.value.length > 0);
 
 // Atualizar estado local quando os props mudarem
 watch(() => props.negocios, (newNegocios) => {
-  localNegocios.value = newNegocios.data || [];
+  if (newNegocios && newNegocios.data) {
+    localNegocios.value = [...newNegocios.data];
+    console.log('Watch: Negócios atualizados do servidor para estado local:', localNegocios.value.length);
+  }
   pendingChanges.value = []; // Limpar mudanças pendentes ao recarregar
-  console.log('Negócios atualizados do servidor:', localNegocios.value.length);
-}, { immediate: true });
+}, { deep: true, immediate: true });
 
 function openEdit(negocio) {
   negocioEdit.value = negocio;
@@ -72,12 +81,12 @@ function submitEdit() {
   saving.value = true;
   router.put(route('negocios.update', negocioEdit.value.id), editForm.value, {
     preserveScroll: true,
+    preserveState: false,
     onSuccess: () => {
       feedback.value = 'Negócio atualizado com sucesso!';
       saving.value = false;
       setTimeout(() => {
         closeModal();
-        router.reload({ only: ['negocios'] });
       }, 1000);
     },
     onError: (errors) => {
@@ -134,14 +143,22 @@ async function savePendingChanges() {
       const negocio = localNegocios.value.find(n => n.id === negocioId);
       if (negocio) {
         console.log(`Atualizando negócio ID ${negocioId} para estado: ${negocio.estado}`);
-        await axios.put(route('negocios.update', negocioId), { estado: negocio.estado });
+        // Usar router do Inertia em vez de axios para garantir atualização da página
+        await router.put(route('negocios.update', negocioId), 
+          { estado: negocio.estado },
+          { 
+            preserveScroll: true,
+            preserveState: true, // Manter estado durante atualizações em massa
+            only: ['negocios'] 
+          }
+        );
       }
     }
     
     feedback.value = 'Alterações salvas com sucesso!';
     pendingChanges.value = [];
     
-    // Recarregar os dados após salvar todas as alterações
+    // Recarregar os dados após salvar todas as alterações com preserveState false na última atualização
     router.reload({ only: ['negocios'] });
   } catch (error) {
     console.error('Erro ao salvar:', error);
@@ -276,7 +293,7 @@ const filteredContactos = computed(() => {
 
       <!-- Kanban -->
       <div v-else class="bg-zinc-800 shadow-lg rounded-lg p-4">
-        <div class="flex justify-between items-center mb-4">
+        <!-- <div class="flex justify-between items-center mb-4">
           <div class="flex items-center gap-2">
             <span v-if="hasPendingChanges" class="text-sm text-yellow-400 flex items-center gap-2">
               <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
@@ -295,7 +312,7 @@ const filteredContactos = computed(() => {
             <span v-if="isUpdating">Salvando...</span>
             <span v-else>Salvar Alterações</span>
           </button>
-        </div>
+        </div> -->
         <div v-if="feedback" class="mb-4 p-2 rounded text-center" :class="feedback.includes('Erro') ? 'bg-red-900/50 text-red-300' : 'bg-green-900/50 text-green-300'">
           {{ feedback }}
         </div>

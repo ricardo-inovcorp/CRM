@@ -52,19 +52,51 @@ class User extends Authenticatable
     }
 
     /**
-     * Determine if the user is an administrator.
-     *
-     * @return bool
+     * Os papéis (roles) deste usuário.
      */
-    public function isAdmin(): bool
+    public function roles(): BelongsToMany
     {
-        // Admin é o usuário com is_admin=true ou sem tenant_id (usuário global)
-        return $this->is_admin || $this->tenant_id === null;
+        return $this->belongsToMany(Role::class);
     }
 
+    /**
+     * O tenant (empresa) ao qual este usuário pertence.
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * Verificar se o usuário tem uma determinada role.
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->roles()->where('slug', $role)->exists();
+    }
+
+    /**
+     * Verificar se o usuário é Admin.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Verificar se o usuário é Manager.
+     */
+    public function isManager(): bool
+    {
+        return $this->hasRole('manager') || $this->isAdmin();
+    }
+
+    /**
+     * Verificar se o usuário é Staff.
+     */
+    public function isStaff(): bool
+    {
+        return $this->hasRole('staff') || $this->isManager();
     }
 
     public function atividadesParticipante(): BelongsToMany

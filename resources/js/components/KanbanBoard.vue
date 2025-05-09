@@ -23,12 +23,21 @@ const columnStates = ref({});
 
 // Inicializar o estado local quando os props mudarem
 watch(() => props.negocios, (newNegocios) => {
+  console.log('KanbanBoard: Atualizando colunas com', newNegocios?.length || 0, 'negócios');
   const newStates = {};
-  props.estados.forEach(estado => {
-    newStates[estado] = newNegocios.filter(negocio => negocio.estado === estado);
-  });
+  if (!newNegocios || newNegocios.length === 0) {
+    console.warn('KanbanBoard: Array de negócios vazio ou undefined');
+    props.estados.forEach(estado => {
+      newStates[estado] = [];
+    });
+  } else {
+    props.estados.forEach(estado => {
+      newStates[estado] = newNegocios.filter(negocio => negocio.estado === estado);
+      console.log(`KanbanBoard: Coluna ${estado} tem ${newStates[estado].length} negócios`);
+    });
+  }
   columnStates.value = newStates;
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 function estadoBadgeClass(estado) {
   switch (estado) {

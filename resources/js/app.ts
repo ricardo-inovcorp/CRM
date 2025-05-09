@@ -29,18 +29,34 @@ createInertiaApp({
     resolve: (name) => {
         console.log('Tentando resolver componente:', name);
         
-        // Importa todos os arquivos .vue dentro da pasta pages
-        const pages = import.meta.glob('./pages/**/*.vue', { eager: false });
+        // Import pages from both Pages (capital P) and pages (lowercase p) directories
+        const pagesCapital = import.meta.glob('./Pages/**/*.vue', { eager: false });
+        const pagesLowercase = import.meta.glob('./pages/**/*.vue', { eager: false });
+        
+        // Merge both page collections
+        const pages = { ...pagesCapital, ...pagesLowercase };
         
         // Log dos componentes disponíveis
         console.log('Componentes disponíveis:', Object.keys(pages));
         
-        // Constrói o caminho do componente e tenta resolvê-lo
-        const componentPath = `./pages/${name}.vue`;
-        console.log('Procurando componente em:', componentPath);
+        // Try both capitalized and lowercase paths
+        const pathCapital = `./Pages/${name}.vue`;
+        const pathLowercase = `./pages/${name}.vue`;
+        
+        console.log('Procurando componente em:', pathCapital, 'ou', pathLowercase);
         
         try {
-            return resolvePageComponent(componentPath, pages);
+            // Try uppercase path first
+            if (pages[pathCapital]) {
+                return resolvePageComponent(pathCapital, pages);
+            }
+            // Then try lowercase path
+            if (pages[pathLowercase]) {
+                return resolvePageComponent(pathLowercase, pages);
+            }
+            
+            // Default to original behavior
+            return resolvePageComponent(`./Pages/${name}.vue`, pages);
         } catch (error) {
             console.error('Erro ao resolver componente:', error);
             throw error;

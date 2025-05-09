@@ -1,14 +1,18 @@
-<script setup lang="ts">
+<script setup>
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BarChart2, BookOpen, Briefcase, Calendar, Cog, Folder, LayoutGrid, Users, Building2 } from 'lucide-vue-next';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BarChart2, BookOpen, Briefcase, Calendar, Cog, Folder, LayoutGrid, Users, Building2, UserCog } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+// Check if user is admin using the shared property
+const user = page.props.auth.user;
+const showAdminMenu = page.props.auth.user && user.isAdmin;
+
+const mainNavItems = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -39,6 +43,14 @@ const mainNavItems: NavItem[] = [
         href: route('relatorios.index'),
         icon: BarChart2,
     },
+    // Adicionar link de gestão de usuários apenas para admins
+    ...(showAdminMenu ? [
+        {
+            title: 'Utilizadores',
+            href: route('users.index'),
+            icon: UserCog,
+        }
+    ] : []),
     {
         title: 'Configurações',
         href: '/settings/profile',
@@ -46,6 +58,18 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
+const footerNavItems = [
+    {
+        title: 'Documentação',
+        href: 'https://laravel.com/docs',
+        icon: BookOpen,
+    },
+    {
+        title: 'GitHub',
+        href: 'https://github.com/laravel/laravel',
+        icon: Folder,
+    },
+];
 
 </script>
 
