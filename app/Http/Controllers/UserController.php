@@ -62,7 +62,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users',
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'roles' => 'required|array',
+            'roles' => 'required|array|size:1',
             'roles.*' => 'exists:roles,id',
         ]);
         
@@ -74,7 +74,7 @@ class UserController extends Controller
             'tenant_id' => Auth::user()->tenant_id, // Associar ao tenant atual
         ]);
         
-        // Adicionar as roles selecionadas
+        // Adicionar a role selecionada
         $user->roles()->sync($request->roles);
         
         return redirect()->route('users.index')->with('success', 'Usuário criado com sucesso!');
@@ -131,7 +131,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users,email,' . $user->id,
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'roles' => 'required|array',
+            'roles' => 'required|array|size:1',
             'roles.*' => 'exists:roles,id',
         ]);
         
@@ -145,7 +145,7 @@ class UserController extends Controller
         
         $user->save();
         
-        // Atualizar as roles
+        // Atualizar a role
         $user->roles()->sync($request->roles);
         
         return redirect()->route('users.index')->with('success', 'Usuário atualizado com sucesso!');

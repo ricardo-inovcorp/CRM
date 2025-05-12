@@ -10,7 +10,14 @@ import AppLogo from './AppLogo.vue';
 const page = usePage();
 // Check if user is admin using the shared property
 const user = page.props.auth.user;
-const showAdminMenu = page.props.auth.user && user.isAdmin;
+
+// Usar isAdmin/isManager do próprio user (já calculados no backend)
+const isAdmin = !!user.isAdmin;
+const isManager = !!user.isManager;
+const isStaff = !!user.isStaff;
+
+// Menu de Utilizadores para admin e manager
+const showUsersMenu = isAdmin || isManager;
 
 const mainNavItems = [
     {
@@ -43,8 +50,8 @@ const mainNavItems = [
         href: route('relatorios.index'),
         icon: BarChart2,
     },
-    // Adicionar link de gestão de usuários apenas para admins
-    ...(showAdminMenu ? [
+    // Menu Utilizadores: só admin e gestor
+    ...(showUsersMenu ? [
         {
             title: 'Utilizadores',
             href: route('users.index'),

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Dialog from '@/components/ui/dialog/Dialog.vue';
 import DialogContent from '@/components/ui/dialog/DialogContent.vue';
@@ -36,6 +36,12 @@ const editForm = ref({
 });
 const feedback = ref('');
 const saving = ref(false);
+
+const page = usePage();
+const user = page.props.auth.user;
+const isAdmin = !!user.isAdmin;
+const isManager = !!user.isManager;
+const canEdit = isAdmin || isManager; // Apenas admin e gestor podem editar
 
 const canDelete = computed(() => {
     return confirmDeleteText.value === 'DELETAR';
@@ -116,7 +122,7 @@ function submitDelete() {
         <div class="p-6">
             <div class="mb-6 flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Contactos</h1>
-                <a :href="route('contactos.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
+                <a v-if="canEdit" :href="route('contactos.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
                     Novo Contacto
                 </a>
             </div>
@@ -152,10 +158,10 @@ function submitDelete() {
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                                            <button @click.stop="openEdit(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
+                                            <button v-if="canEdit" @click.stop="openEdit(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
                                                 <Pencil class="w-5 h-5 text-primary" />
                                             </button>
-                                            <button @click.stop="openDelete(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
+                                            <button v-if="isAdmin" @click.stop="openDelete(contacto)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
                                                 <Trash2 class="w-5 h-5 text-red-500" />
                                             </button>
                                         </div>

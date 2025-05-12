@@ -1,5 +1,5 @@
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Pencil, Trash2, Eye, LayoutGrid, Table } from 'lucide-vue-next';
@@ -18,6 +18,12 @@ const props = defineProps({
   contactos: Array,
   estados: Array,
 });
+
+const page = usePage();
+const user = page.props.auth.user;
+const isAdmin = !!user.isAdmin;
+const isManager = !!user.isManager;
+const canEdit = isAdmin || isManager; // Apenas admin e gestor podem editar
 
 // Dados de depuração para verificar o que está sendo recebido do servidor
 console.log('Negócios recebidos do servidor:', props.negocios);
@@ -218,7 +224,7 @@ const filteredContactos = computed(() => {
               <LayoutGrid class="w-5 h-5" />
             </button>
           </div>
-          <Link :href="route('negocios.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">Novo Negócio</Link>
+          <Link v-if="canEdit" :href="route('negocios.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">Novo Negócio</Link>
         </div>
       </div>
 
@@ -259,10 +265,10 @@ const filteredContactos = computed(() => {
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-center">
                     <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                      <button @click.stop="openEdit(negocio)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
+                      <button v-if="canEdit" @click.stop="openEdit(negocio)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
                         <Pencil class="w-5 h-5 text-primary" />
                       </button>
-                      <button @click.stop="destroy(negocio.id)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
+                      <button v-if="isAdmin" @click.stop="destroy(negocio.id)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
                         <Trash2 class="w-5 h-5 text-red-500" />
                       </button>
                     </div>

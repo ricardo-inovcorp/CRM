@@ -97,13 +97,14 @@
                         <!-- Funções - Ocupa toda a largura -->
                         <div class="space-y-2">
                             <label class="text-sm font-medium">Funções <span class="text-red-500">*</span></label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                                <div v-for="role in roles" :key="role.id" class="flex items-center">
+                            <div class="grid grid-cols-1 gap-3 mt-2">
+                                <div v-for="role in roles" :key="role.id" class="flex items-center" v-if="isAdmin || role.slug !== 'admin'">
                                     <input
                                         :id="'role-' + role.id"
-                                        type="checkbox"
+                                        type="radio"
                                         :value="role.id"
                                         v-model="form.roles"
+                                        name="user-role"
                                         class="h-4 w-4 text-primary border-input rounded focus:ring-primary"
                                     />
                                     <label :for="'role-' + role.id" class="ml-2 block text-sm">
@@ -131,7 +132,7 @@
 </template>
 
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -151,10 +152,19 @@ const form = useForm({
     roles: [],
 });
 
+const page = usePage();
+const user = page.props.auth.user;
+const userRoles = user.roles ? user.roles.map(r => r.slug) : [];
+const isAdmin = userRoles.includes('admin');
+const isManager = userRoles.includes('manager');
+
 const submit = () => {
+    if (!Array.isArray(form.roles)) {
+        form.roles = [form.roles];
+    }
     form.post(route('users.store'), {
         onSuccess: () => {
-            form.reset('password', 'password_confirmation');
+            form.reset('password', 'password_confirmation', 'roles');
         }
     });
 };

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Dialog from '@/components/ui/dialog/Dialog.vue';
 import DialogContent from '@/components/ui/dialog/DialogContent.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
-import { router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { Pencil, Trash2 } from 'lucide-vue-next';
 
@@ -36,6 +35,12 @@ const editForm = ref({
 
 const showDeleteModal = ref(false);
 const atividadeDelete = ref(null);
+
+const page = usePage();
+const user = page.props.auth.user;
+const isAdmin = !!user.isAdmin;
+const isManager = !!user.isManager;
+const canEdit = isAdmin || isManager; // Apenas admin e gestor podem editar
 
 function openEdit(atividade) {
     atividadeEdit.value = atividade;
@@ -152,7 +157,7 @@ const formatDuracao = (minutos: number | null | undefined) => {
         <div class="p-6">
             <div class="mb-6 flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Atividades</h1>
-                <a :href="route('atividades.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
+                <a v-if="canEdit" :href="route('atividades.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
                     Nova Atividade
                 </a>
             </div>
@@ -187,10 +192,10 @@ const formatDuracao = (minutos: number | null | undefined) => {
                                     <td class="px-4 py-4 max-w-xs truncate text-gray-200">{{ atividade.descricao || '—' }}</td>
                                     <td class="px-4 py-4 whitespace-nowrap text-center">
                                         <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                                            <button @click.stop="openEdit(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
+                                            <button v-if="canEdit" @click.stop="openEdit(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
                                                 <Pencil class="w-5 h-5 text-primary" />
                                             </button>
-                                            <button @click.stop="openDelete(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
+                                            <button v-if="isAdmin" @click.stop="openDelete(atividade)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
                                                 <Trash2 class="w-5 h-5 text-red-500" />
                                             </button>
                                         </div>

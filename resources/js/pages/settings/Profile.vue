@@ -4,10 +4,38 @@ import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { AlertCircle, CheckCircle2 } from 'lucide-vue-next';
 
-const user = usePage().props.auth.user;
+interface Role {
+  id: number;
+  nome: string;
+  slug: string;
+  descricao: string;
+}
+
+interface User {
+  name: string;
+  email: string;
+  roles: Role[];
+}
+
+interface PageProps {
+  auth: {
+    user: User;
+  };
+  csrf_token: string;
+}
+
+const page = usePage<PageProps>();
+const user = page.props.auth.user;
 const form = useForm({
   name: user.name,
   email: user.email,
+});
+
+const props = defineProps({
+  user: {
+    type: Object as () => User,
+    required: true
+  }
 });
 
 const feedback = ref('');
@@ -105,6 +133,16 @@ function submitPassword() {
               {{ form.errors.email }}
             </div>
           </div>
+
+          <div>
+            <label class="block mb-2 text-sm font-medium">Função</label>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <span v-for="role in props.user.roles" :key="role.id" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
+                {{ role.nome }}
+              </span>
+              <p v-if="props.user.roles.length === 0" class="text-sm text-muted-foreground">Nenhuma função atribuída</p>
+            </div>
+          </div>
         </div>
         
         <div class="flex items-center justify-end gap-4 pt-4">
@@ -118,7 +156,7 @@ function submitPassword() {
         </div>
       </form>
       
-      <div class="border-t border-border mt-10 pt-10">
+      <div v-if="props.user.roles.some(role => role.slug === 'admin')" class="border-t border-border mt-10 pt-10">
         <h2 class="text-xl font-semibold mb-4">Excluir conta</h2>
         <p class="text-muted-foreground mb-6">Após excluir sua conta, todos os recursos e dados serão permanentemente excluídos.</p>
         
@@ -131,7 +169,7 @@ function submitPassword() {
         
         <form id="delete-account-form" method="post" :action="route('profile.destroy')" class="hidden">
           <input type="hidden" name="_method" value="DELETE">
-          <input type="hidden" name="_token" :value="$page.props.csrf_token">
+          <input type="hidden" name="_token" :value="page.props.csrf_token">
         </form>
       </div>
     </div>

@@ -4,7 +4,7 @@
         <div class="p-6">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-2xl font-bold">Utilizadores</h1>
-                <Link v-if="$page.props.auth.user.isAdmin" :href="route('users.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
+                <Link v-if="isAdmin" :href="route('users.create')" class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition">
                     Novo Utilizador
                 </Link>
             </div>
@@ -42,10 +42,10 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition">
-                                        <button v-if="$page.props.auth.user.isAdmin" @click="openEdit(user)" class="p-1 rounded hover:bg-zinc-600">
+                                        <button v-if="isAdmin" @click="openEdit(user)" class="p-1 rounded hover:bg-zinc-600">
                                             <Pencil class="w-5 h-5 text-primary" />
                                         </button>
-                                        <button v-if="$page.props.auth.user.isAdmin && user.id !== $page.props.auth.user.id" @click="confirmDelete(user)" class="p-1 rounded hover:bg-zinc-600">
+                                        <button v-if="isAdmin && user.id !== $page.props.auth.user.id" @click="confirmDelete(user)" class="p-1 rounded hover:bg-zinc-600">
                                             <Trash2 class="w-5 h-5 text-red-500" />
                                         </button>
                                     </div>
@@ -105,23 +105,31 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-foreground">Funções</label>
                         <div class="mt-2 space-y-2">
-                            <div v-for="role in roles" :key="role.id" class="flex items-center">
-                                <input
-                                    :id="'role-' + role.id"
-                                    type="checkbox"
-                                    :value="role.id"
-                                    v-model="editForm.roles"
-                                    class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <label :for="'role-' + role.id" class="ml-2 block text-sm text-gray-300">
-                                    {{ role.nome }} - {{ role.descricao }}
-                                </label>
-                            </div>
+                            <template v-if="isAdmin">
+                                <div v-for="role in roles" :key="role.id" class="flex items-center">
+                                    <input
+                                        :id="'role-' + role.id"
+                                        type="radio"
+                                        :value="role.id"
+                                        v-model="editForm.roles"
+                                        :name="'user-role'"
+                                        class="h-4 w-4 text-primary border-input rounded focus:ring-primary"
+                                    />
+                                    <label :for="'role-' + role.id" class="ml-2 block text-sm text-gray-300">
+                                        {{ role.nome }} <span class="text-muted-foreground text-xs">{{ role.descricao }}</span>
+                                    </label>
+                                </div>
+                            </template>
+                            <template v-else>
+                                <span v-for="roleId in editForm.roles" :key="roleId">
+                                    {{ roles.find(r => r.id === roleId)?.nome }}
+                                </span>
+                            </template>
                         </div>
                     </div>
                     <DialogFooter class="flex justify-end gap-2 mt-4">
                         <button type="button" @click="closeModals" class="px-4 py-2 rounded bg-zinc-700 text-white hover:bg-zinc-600">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 rounded bg-zinc-900 text-grey-900 hover:bg-zinc-800 font-semibold" :disabled="saving">
+                        <button v-if="isAdmin" type="submit" class="px-4 py-2 rounded bg-zinc-900 text-grey-900 hover:bg-zinc-800 font-semibold" :disabled="saving">
                             <span v-if="saving">Salvando...</span>
                             <span v-else>Salvar</span>
                         </button>
@@ -134,7 +142,7 @@
 </template>
 
 <script setup>
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { ref, onMounted, onErrorCaptured } from 'vue';
 import { Pencil, Trash2 } from 'lucide-vue-next';
@@ -162,6 +170,17 @@ const editForm = ref({
 });
 const feedback = ref('');
 const saving = ref(false);
+
+const page = usePage();
+const user = page.props.auth.user;
+
+// Usar isAdmin/isManager do próprio user (já calculados no backend)
+const isAdmin = !!user.isAdmin;
+const isManager = !!user.isManager;
+
+function hasRole(user, slug) {
+    return user.roles && user.roles.some(r => r.slug === slug);
+}
 
 // Debug logs
 onMounted(() => {
@@ -203,7 +222,7 @@ const openEdit = (user) => {
         email: user.email,
         password: '',
         password_confirmation: '',
-        roles: user.roles.map(role => role.id)
+        roles: user.roles.length > 0 ? [user.roles[0].id] : []
     };
     showEditModal.value = true;
 };
@@ -217,6 +236,9 @@ const closeModals = () => {
 };
 
 const submitEdit = () => {
+    if (!Array.isArray(editForm.value.roles)) {
+        editForm.value.roles = [editForm.value.roles];
+    }
     saving.value = true;
     router.put(route('users.update', userToEdit.value.id), editForm.value, {
         preserveScroll: true,
