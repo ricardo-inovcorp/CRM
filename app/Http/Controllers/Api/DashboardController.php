@@ -1,22 +1,25 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Atividade;
 use App\Models\Contacto;
 use App\Models\Entidade;
 use App\Models\Negocio;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class DashboardController extends Controller
 {
     /**
-     * Mostra o dashboard com estatísticas iniciais.
+     * Retorna as estatísticas para o dashboard
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function index(Request $request): Response
+    public function stats(Request $request): JsonResponse
     {
         // Tenant atual é automaticamente filtrado pelos global scopes dos models
 
@@ -25,10 +28,8 @@ class DashboardController extends Controller
         $totalContactos = Contacto::count();
         $totalAtividades = Atividade::count();
         
-        // Verificar todos os negócios para debug
+        // Obter todos os negócios para contagem correta
         $todosNegocios = Negocio::select('id', 'nome', 'estado')->get();
-        \Illuminate\Support\Facades\Log::info('Todos os negócios:', $todosNegocios->toArray());
-        
         $totalNegocios = $todosNegocios->count();
 
         // Valores de negócios
@@ -49,11 +50,6 @@ class DashboardController extends Controller
                 'count' => $negocios->count()
             ];
         }
-        
-        \Illuminate\Support\Facades\Log::info('Estados dos negócios:', [
-            'estadosNegocios' => $estadosNegocios,
-            'totalNegocios' => $totalNegocios
-        ]);
 
         // Verificar se os totais batem
         $totalPorEstados = array_reduce($estadosNegocios, function($carry, $item) {
@@ -92,24 +88,21 @@ class DashboardController extends Controller
                     'id' => $negocio->id,
                     'nome' => $negocio->nome,
                     'estado' => $negocio->estado,
-                    'valor' => (float)$negocio->valor,
+                    'valor' => $negocio->valor,
                     'entidade' => $negocio->entidade ? $negocio->entidade->nome : 'N/A'
                 ];
             });
 
-        // Retorna a vista com os dados iniciais
-        return Inertia::render('Dashboard', [
-            'initialStats' => [
-                'totalEntidades' => $totalEntidades,
-                'totalContactos' => $totalContactos,
-                'totalAtividades' => $totalAtividades,
-                'totalNegocios' => $totalNegocios,
-                'valorTotalNegocios' => (float)$valorTotalNegocios,
-                'valorTotalNegociosGanhos' => (float)$valorTotalNegociosGanhos,
-                'estadosNegocios' => $estadosNegocios,
-                'atividadesRecentes' => $atividadesRecentes,
-                'negociosRecentes' => $negociosRecentes
-            ]
+        return response()->json([
+            'totalEntidades' => $totalEntidades,
+            'totalContactos' => $totalContactos,
+            'totalAtividades' => $totalAtividades,
+            'totalNegocios' => $totalNegocios,
+            'valorTotalNegocios' => $valorTotalNegocios,
+            'valorTotalNegociosGanhos' => $valorTotalNegociosGanhos,
+            'estadosNegocios' => $estadosNegocios,
+            'atividadesRecentes' => $atividadesRecentes,
+            'negociosRecentes' => $negociosRecentes
         ]);
     }
 } 

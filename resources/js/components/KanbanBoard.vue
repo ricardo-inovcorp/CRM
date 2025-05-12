@@ -76,6 +76,11 @@ function onDragEnd(evt) {
     return;
   }
   console.log('KanbanBoard: Emitindo update:estado', { negocioId, negocioNome: negocio.nome, novoEstado });
+  
+  // Definir localStorage flag para indicar que um negócio foi atualizado
+  localStorage.setItem('negocio_atualizado', 'true');
+  
+  // Emitir evento para o componente pai
   emit('update:estado', { negocio: { ...negocio, estado: novoEstado }, novoEstado });
 }
 </script>

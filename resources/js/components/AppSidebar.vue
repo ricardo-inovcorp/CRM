@@ -65,18 +65,18 @@ const mainNavItems = [
     },
 ];
 
-const footerNavItems = [
-    {
-        title: 'Documentação',
-        href: 'https://laravel.com/docs',
-        icon: BookOpen,
-    },
-    {
-        title: 'GitHub',
-        href: 'https://github.com/laravel/laravel',
-        icon: Folder,
-    },
-];
+// const footerNavItems = [
+//     {
+//         title: 'Documentação',
+//         href: 'https://laravel.com/docs',
+//         icon: BookOpen,
+//     },
+//     {
+//         title: 'GitHub',
+//         href: 'https://github.com/laravel/laravel',
+//         icon: Folder,
+//     },
+// ];
 
 </script>
 

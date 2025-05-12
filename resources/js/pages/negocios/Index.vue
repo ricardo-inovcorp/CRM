@@ -44,16 +44,11 @@ const viewMode = ref('table'); // 'table' or 'kanban'
 
 // Estado local dos negócios
 const localNegocios = ref([]);
-// Usar um array simples para rastrear mudanças pendentes
-const pendingChanges = ref([]);
 const isUpdating = ref(false);
 
 // Inicializar o estado local imediatamente
 localNegocios.value = props.negocios?.data || [];
 console.log('Estado local inicializado com', localNegocios.value.length, 'negócios');
-
-// Verificar se temos mudanças pendentes
-const hasPendingChanges = computed(() => pendingChanges.value.length > 0);
 
 // Atualizar estado local quando os props mudarem
 watch(() => props.negocios, (newNegocios) => {
@@ -61,7 +56,6 @@ watch(() => props.negocios, (newNegocios) => {
     localNegocios.value = [...newNegocios.data];
     console.log('Watch: Negócios atualizados do servidor para estado local:', localNegocios.value.length);
   }
-  pendingChanges.value = []; // Limpar mudanças pendentes ao recarregar
 }, { deep: true, immediate: true });
 
 function openEdit(negocio) {
@@ -125,56 +119,32 @@ function handleEstadoUpdate({ negocio, novoEstado }) {
     // Atualizar o estado local
     localNegocios.value[negocioIndex].estado = novoEstado;
     
-    // Adicionar à lista de mudanças pendentes (apenas se não existir ainda)
-    if (!pendingChanges.value.includes(negocio.id)) {
-      pendingChanges.value.push(negocio.id);
-      console.log(`Negócio ${negocio.id} (${negocio.nome}) movido de ${estadoAnterior} para ${novoEstado}`);
-      console.log('Mudanças pendentes:', pendingChanges.value);
-    }
-  }
-}
-
-async function savePendingChanges() {
-  if (!hasPendingChanges.value) {
-    console.log('Nenhuma mudança pendente para salvar');
-    return;
-  }
-  
-  console.log('Salvando mudanças:', pendingChanges.value);
-  isUpdating.value = true;
-  
-  try {
-    // Atualizar apenas o estado de cada negócio pendente
-    for (const negocioId of pendingChanges.value) {
-      const negocio = localNegocios.value.find(n => n.id === negocioId);
-      if (negocio) {
-        console.log(`Atualizando negócio ID ${negocioId} para estado: ${negocio.estado}`);
-        // Usar router do Inertia em vez de axios para garantir atualização da página
-        await router.put(route('negocios.update', negocioId), 
-          { estado: negocio.estado },
-          { 
-            preserveScroll: true,
-            preserveState: true, // Manter estado durante atualizações em massa
-            only: ['negocios'] 
-          }
-        );
-      }
-    }
+    // Feedback visual temporário
+    feedback.value = `Salvando negócio "${negocio.nome}"...`;
     
-    feedback.value = 'Alterações salvas com sucesso!';
-    pendingChanges.value = [];
-    
-    // Recarregar os dados após salvar todas as alterações com preserveState false na última atualização
-    router.reload({ only: ['negocios'] });
-  } catch (error) {
-    console.error('Erro ao salvar:', error);
-    feedback.value = 'Erro ao salvar alterações. Por favor, tente novamente.';
+    // Salvar imediatamente a alteração no servidor
+    axios.put(route('negocios.update', negocio.id), { estado: novoEstado })
+      .then(response => {
+        console.log('Estado atualizado com sucesso:', response.data);
+        feedback.value = `Negócio "${negocio.nome}" movido para ${novoEstado}`;
+        
+        // Limpar o feedback após 2 segundos
+        setTimeout(() => {
+          feedback.value = '';
+        }, 2000);
+      })
+      .catch(error => {
+        console.error('Erro ao atualizar estado:', error);
+        // Reverter a alteração local em caso de erro
+        localNegocios.value[negocioIndex].estado = estadoAnterior;
+        feedback.value = 'Erro ao atualizar estado. Tente novamente.';
+        
+        // Limpar o feedback de erro após 3 segundos
+        setTimeout(() => {
+          feedback.value = '';
+        }, 3000);
+      });
   }
-  
-  isUpdating.value = false;
-  setTimeout(() => {
-    feedback.value = '';
-  }, 2000);
 }
 
 function estadoBadgeClass(estado) {
@@ -299,26 +269,6 @@ const filteredContactos = computed(() => {
 
       <!-- Kanban -->
       <div v-else class="bg-zinc-800 shadow-lg rounded-lg p-4">
-        <!-- <div class="flex justify-between items-center mb-4">
-          <div class="flex items-center gap-2">
-            <span v-if="hasPendingChanges" class="text-sm text-yellow-400 flex items-center gap-2">
-              <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-              {{ pendingChanges.length }} alteração(ões) pendente(s)
-            </span>
-            <span v-else class="text-sm text-gray-400">
-              Nenhuma alteração pendente
-            </span>
-          </div>
-          <button 
-            @click="savePendingChanges" 
-            class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="!hasPendingChanges || isUpdating"
-            @mouseenter="console.log('Estado do botão: hasPendingChanges=', hasPendingChanges, 'isUpdating=', isUpdating, 'pendingChanges=', pendingChanges)"
-          >
-            <span v-if="isUpdating">Salvando...</span>
-            <span v-else>Salvar Alterações</span>
-          </button>
-        </div> -->
         <div v-if="feedback" class="mb-4 p-2 rounded text-center" :class="feedback.includes('Erro') ? 'bg-red-900/50 text-red-300' : 'bg-green-900/50 text-green-300'">
           {{ feedback }}
         </div>

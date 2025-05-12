@@ -30,7 +30,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
+        ->name('dashboard');
     
     // Calendário
     Route::get('/calendario', [CalendarioController::class, 'index'])->name('calendario.index');
