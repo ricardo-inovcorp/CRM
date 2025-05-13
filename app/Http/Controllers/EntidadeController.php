@@ -45,6 +45,7 @@ class EntidadeController extends Controller
                 'search' => $search,
                 'estado' => $estado,
             ],
+            'estados_disponiveis' => ['Ativo', 'Inativo']
         ]);
     }
 

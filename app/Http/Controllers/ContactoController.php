@@ -35,7 +35,10 @@ class ContactoController extends Controller
                         ->orWhere('apelido', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('telefone', 'like', "%{$search}%")
-                        ->orWhere('telemovel', 'like', "%{$search}%");
+                        ->orWhere('telemovel', 'like', "%{$search}%")
+                        ->orWhereHas('entidade', function ($q) use ($search) {
+                            $q->where('nome', 'like', "%{$search}%");
+                        });
                 });
             })
             ->when($entidade_id, function ($query, $entidade_id) {
@@ -60,6 +63,7 @@ class ContactoController extends Controller
                 'entidade_id' => $entidade_id,
                 'estado' => $estado,
             ],
+            'estados_disponiveis' => ['Ativo', 'Inativo']
         ]);
     }
 

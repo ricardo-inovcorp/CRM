@@ -2,7 +2,7 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Pencil, Trash2, Eye, LayoutGrid, Table } from 'lucide-vue-next';
+import { Pencil, Trash2, Eye, LayoutGrid, Table, Search, Filter, Building, ListFilter } from 'lucide-vue-next';
 import Dialog from '@/components/ui/dialog/Dialog.vue';
 import DialogContent from '@/components/ui/dialog/DialogContent.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
@@ -17,6 +17,7 @@ const props = defineProps({
   entidades: Array,
   contactos: Array,
   estados: Array,
+  filters: Object,
 });
 
 const page = usePage();
@@ -41,6 +42,50 @@ const editForm = ref({
 const feedback = ref('');
 const saving = ref(false);
 const viewMode = ref('table'); // 'table' or 'kanban'
+
+// Filtros
+const searchQuery = ref(props.filters?.search || '');
+const tipoFilter = ref(props.filters?.tipo_id || '');
+const entidadeFilter = ref(props.filters?.entidade_id || '');
+const estadoFilter = ref(props.filters?.estado || '');
+
+// Watch para aplicar filtros quando mudarem
+watch(searchQuery, debounceFilter, { immediate: false });
+watch(tipoFilter, aplicarFiltros, { immediate: false });
+watch(entidadeFilter, aplicarFiltros, { immediate: false });
+watch(estadoFilter, aplicarFiltros, { immediate: false });
+
+// Função para debounce da busca
+let timeoutId = null;
+function debounceFilter() {
+  clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => {
+    aplicarFiltros();
+  }, 300);
+}
+
+// Função para aplicar os filtros
+function aplicarFiltros() {
+  router.get(route('negocios.index'), {
+    search: searchQuery.value,
+    tipo_id: tipoFilter.value,
+    entidade_id: entidadeFilter.value,
+    estado: estadoFilter.value
+  }, {
+    preserveState: true,
+    replace: true,
+    only: ['negocios']
+  });
+}
+
+// Função para limpar filtros
+function limparFiltros() {
+  searchQuery.value = '';
+  tipoFilter.value = '';
+  entidadeFilter.value = '';
+  estadoFilter.value = '';
+  aplicarFiltros();
+}
 
 // Estado local dos negócios
 const localNegocios = ref([]);
@@ -198,6 +243,85 @@ const filteredContactos = computed(() => {
         </div>
       </div>
 
+      <!-- Barra de filtros -->
+      <div class="mb-6 bg-zinc-800 p-4 rounded-lg shadow-md">
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <label class="text-sm font-medium mb-1 block text-gray-300">Buscar por nome</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search class="w-4 h-4 text-gray-400" />
+              </div>
+              <input 
+                type="text" 
+                v-model="searchQuery" 
+                placeholder="Digite o nome do negócio..." 
+                class="w-full pl-10 pr-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+          <div class="w-full md:w-56">
+            <label class="text-sm font-medium mb-1 block text-gray-300">Filtrar por tipo</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <ListFilter class="w-4 h-4 text-gray-400" />
+              </div>
+              <select 
+                v-model="tipoFilter" 
+                class="w-full pl-10 pr-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+              >
+                <option value="">Todos os tipos</option>
+                <option v-for="tipo in tipos" :key="tipo.id" :value="tipo.id">
+                  {{ tipo.nome }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="w-full md:w-64">
+            <label class="text-sm font-medium mb-1 block text-gray-300">Filtrar por entidade</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Building class="w-4 h-4 text-gray-400" />
+              </div>
+              <select 
+                v-model="entidadeFilter" 
+                class="w-full pl-10 pr-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+              >
+                <option value="">Todas as entidades</option>
+                <option v-for="entidade in entidades" :key="entidade.id" :value="entidade.id">
+                  {{ entidade.nome }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="w-full md:w-56">
+            <label class="text-sm font-medium mb-1 block text-gray-300">Filtrar por estado</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Filter class="w-4 h-4 text-gray-400" />
+              </div>
+              <select 
+                v-model="estadoFilter" 
+                class="w-full pl-10 pr-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+              >
+                <option value="">Todos os estados</option>
+                <option v-for="estado in estados" :key="estado" :value="estado">
+                  {{ estado }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-end">
+            <button 
+              @click="limparFiltros" 
+              class="w-full md:w-auto px-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 hover:bg-zinc-700 transition"
+            >
+              Limpar Filtros
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Tabela -->
       <div v-if="viewMode === 'table'" class="bg-zinc-800 shadow-lg rounded-lg overflow-hidden">
         <p v-if="!localNegocios.length" class="text-center py-6 text-gray-400">
@@ -253,12 +377,12 @@ const filteredContactos = computed(() => {
             </div>
             <div class="flex space-x-2">
               <a v-if="negocios.meta.current_page > 1"
-                 :href="`?page=${negocios.meta.current_page - 1}`"
+                 :href="`?page=${negocios.meta.current_page - 1}&search=${searchQuery}&tipo_id=${tipoFilter}&entidade_id=${entidadeFilter}&estado=${estadoFilter}`"
                  class="px-3 py-1 bg-zinc-700 text-gray-200 rounded-md hover:bg-zinc-600 transition">
                 Anterior
               </a>
               <a v-if="negocios.meta.current_page < negocios.meta.last_page"
-                 :href="`?page=${negocios.meta.current_page + 1}`"
+                 :href="`?page=${negocios.meta.current_page + 1}&search=${searchQuery}&tipo_id=${tipoFilter}&entidade_id=${entidadeFilter}&estado=${estadoFilter}`"
                  class="px-3 py-1 bg-zinc-700 text-gray-200 rounded-md hover:bg-zinc-600 transition">
                 Próxima
               </a>

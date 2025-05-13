@@ -14,8 +14,13 @@ use Inertia\Inertia;
 
 class NegocioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->input('search', '');
+        $tipo_id = $request->input('tipo_id', '');
+        $entidade_id = $request->input('entidade_id', '');
+        $estado = $request->input('estado', '');
+        
         // Usar eager loading com queries mais específicas
         $negocios = Negocio::with([
             'tipo', 
@@ -28,7 +33,24 @@ class NegocioController extends Controller
                             ->orWhereNull('contactos.tenant_id');
                       });
             }
-        ])->paginate(15);
+        ])
+        ->when($search, function ($query, $search) {
+            $query->where('nome', 'like', "%{$search}%")
+                  ->orWhereHas('entidade', function ($q) use ($search) {
+                      $q->where('nome', 'like', "%{$search}%");
+                  });
+        })
+        ->when($tipo_id, function ($query, $tipo_id) {
+            $query->where('tipo_id', $tipo_id);
+        })
+        ->when($entidade_id, function ($query, $entidade_id) {
+            $query->where('entidade_id', $entidade_id);
+        })
+        ->when($estado, function ($query, $estado) {
+            $query->where('estado', $estado);
+        })
+        ->paginate(15)
+        ->withQueryString();
         
         // Log para debug
         Log::info('Listando negócios', [
@@ -47,6 +69,12 @@ class NegocioController extends Controller
             'entidades' => $entidades,
             'contactos' => $contactos,
             'estados' => $estados,
+            'filters' => [
+                'search' => $search,
+                'tipo_id' => $tipo_id,
+                'entidade_id' => $entidade_id,
+                'estado' => $estado,
+            ],
         ]);
     }
 

@@ -6,16 +6,17 @@ import DialogContent from '@/components/ui/dialog/DialogContent.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue';
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue';
-import { ref, nextTick, computed } from 'vue';
-import { Pencil, Trash2, AlertTriangle } from 'lucide-vue-next';
+import { ref, nextTick, computed, watch } from 'vue';
+import { Pencil, Trash2, AlertTriangle, Search, Filter } from 'lucide-vue-next';
 
 // Simplificando o tipo para evitar erros
 interface Props {
     entidades: any;
     filters: any;
+    estados_disponiveis: string[];
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const entidadeEdit = ref(null);
 const showEditModal = ref(false);
@@ -26,6 +27,44 @@ const confirmDeleteText = ref('');
 const editForm = ref({ nome: '', email: '', telefone: '', estado: 'Ativo', morada: '', codigo_postal: '', localidade: '', pais_id: null, website: '', observacoes: '' });
 const feedback = ref('');
 const saving = ref(false);
+
+// Filtros
+const searchQuery = ref(props.filters.search || '');
+const estadoFilter = ref(props.filters.estado || '');
+
+// Estados disponíveis vem da props
+
+// Watch para aplicar filtros quando mudarem
+watch(searchQuery, debounceFilter, { immediate: false });
+watch(estadoFilter, aplicarFiltros, { immediate: false });
+
+// Função para debounce da busca
+let timeoutId = null;
+function debounceFilter() {
+  clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => {
+    aplicarFiltros();
+  }, 300);
+}
+
+// Função para aplicar os filtros
+function aplicarFiltros() {
+  router.get(route('entidades.index'), {
+    search: searchQuery.value,
+    estado: estadoFilter.value
+  }, {
+    preserveState: true,
+    replace: true,
+    only: ['entidades']
+  });
+}
+
+// Função para limpar filtros
+function limparFiltros() {
+  searchQuery.value = '';
+  estadoFilter.value = '';
+  aplicarFiltros();
+}
 
 const page = usePage();
 const user = page.props.auth.user;
@@ -122,6 +161,51 @@ function submitDelete() {
                 </a>
             </div>
 
+            <!-- Barra de filtros -->
+            <div class="mb-6 bg-zinc-800 p-4 rounded-lg shadow-md">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <label class="text-sm font-medium mb-1 block text-gray-300">Buscar por nome</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Search class="w-4 h-4 text-gray-400" />
+                            </div>
+                            <input 
+                                type="text" 
+                                v-model="searchQuery" 
+                                placeholder="Digite o nome da entidade..." 
+                                class="w-full pl-10 pr-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                        </div>
+                    </div>
+                    <div class="w-full md:w-64">
+                        <label class="text-sm font-medium mb-1 block text-gray-300">Filtrar por estado</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <Filter class="w-4 h-4 text-gray-400" />
+                            </div>
+                            <select 
+                                v-model="estadoFilter" 
+                                class="w-full pl-10 pr-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+                            >
+                                <option value="">Todos os estados</option>
+                                <option v-for="estado in props.estados_disponiveis" :key="estado" :value="estado">
+                                    {{ estado }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-end">
+                        <button 
+                            @click="limparFiltros" 
+                            class="w-full md:w-auto px-4 py-2 rounded-md border border-zinc-700 bg-zinc-900 text-gray-200 hover:bg-zinc-700 transition"
+                        >
+                            Limpar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-zinc-800 shadow-lg rounded-lg overflow-hidden">
                 <p v-if="!entidades || !entidades.data || entidades.data.length === 0" class="text-center py-6 text-gray-400">
                     Nenhuma entidade encontrada.
@@ -170,12 +254,12 @@ function submitDelete() {
                         </div>
                         <div class="flex space-x-2">
                             <a v-if="entidades.meta.current_page > 1" 
-                                :href="`?page=${entidades.meta.current_page - 1}`"
+                                :href="`?page=${entidades.meta.current_page - 1}&search=${searchQuery}&estado=${estadoFilter}`"
                                 class="px-3 py-1 bg-zinc-700 text-gray-200 rounded-md hover:bg-zinc-600 transition">
                                 Anterior
                             </a>
                             <a v-if="entidades.meta.current_page < entidades.meta.last_page" 
-                                :href="`?page=${entidades.meta.current_page + 1}`"
+                                :href="`?page=${entidades.meta.current_page + 1}&search=${searchQuery}&estado=${estadoFilter}`"
                                 class="px-3 py-1 bg-zinc-700 text-gray-200 rounded-md hover:bg-zinc-600 transition">
                                 Próxima
                             </a>
@@ -206,8 +290,9 @@ function submitDelete() {
                         <div>
                             <label class="block mb-1 text-sm font-medium text-foreground">Estado</label>
                             <select v-model="editForm.estado" class="w-full border border-input bg-background rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary dark:bg-zinc-800 dark:text-white">
-                                <option value="Ativo">Ativo</option>
-                                <option value="Inativo">Inativo</option>
+                                <option v-for="estado in props.estados_disponiveis" :key="estado" :value="estado">
+                                    {{ estado }}
+                                </option>
                             </select>
                         </div>
                         <DialogFooter class="flex justify-end gap-2 mt-4">
