@@ -156,17 +156,17 @@ function handleDateClick(info: any) {
 }
 
 function getEventColor(tipoNome: string): string {
-  // Mapa de cores baseado no tipo de atividade
+  // Mapa de cores em tons de cinza
   const colorMap: Record<string, string> = {
-    'Reunião': '#4f46e5', // indigo
-    'Ligação': '#3b82f6', // blue
-    'Email': '#06b6d4',   // cyan
-    'Visita': '#10b981',  // emerald
-    'Tarefa': '#f59e0b',  // amber
-    'Outro': '#6b7280',   // gray
+    'Reunião': '#1f2937', // Cinza muito escuro
+    'Ligação': '#374151', // Cinza escuro
+    'Email': '#4b5563',   // Cinza médio
+    'Visita': '#6b7280',  // Cinza
+    'Tarefa': '#9ca3af',  // Cinza claro
+    'Outro': '#111827',   // Cinza quase preto
   };
   
-  return colorMap[tipoNome] || '#6b7280'; // gray é a cor padrão
+  return colorMap[tipoNome] || '#4b5563'; // Cinza médio padrão
 }
 
 // Atualizar calendário quando as atividades mudarem
@@ -424,17 +424,17 @@ function submitEdit() {
 <style scoped>
 /* Estilos personalizados do calendário */
 :deep(.fc) {
-  /* Usar as cores do tema do site */
   --fc-border-color: #e5e7eb;
   --fc-button-bg-color: #f3f4f6;
   --fc-button-border-color: #d1d5db;
   --fc-button-text-color: #374151;
   --fc-button-hover-bg-color: #d1d5db;
   --fc-button-hover-border-color: #9ca3af;
-  --fc-button-active-bg-color: #9ca3af;
-  --fc-button-active-border-color: #6b7280;
-  --fc-today-bg-color: #dbeafe; 
+  --fc-button-active-bg-color: #4b5563; /* Cinza escuro */
+  --fc-button-active-border-color: #374151;
+  --fc-today-bg-color: #f3f4f6; /* Cinza muito claro */
   --fc-event-border-color: transparent;
+  --fc-page-bg-color: #ffffff; /* Fundo branco */
 }
 
 :deep(.fc-button) {
@@ -449,6 +449,11 @@ function submitEdit() {
   box-shadow: none;
 }
 
+:deep(.fc-button-primary:not(:disabled).fc-button-active) {
+  background-color: #bababa; /* Cinza escuro */
+  border-color: #374151;
+}
+
 :deep(.fc-daygrid-event) {
   border-radius: 4px;
   padding: 2px 4px;
@@ -461,7 +466,28 @@ function submitEdit() {
 
 /* Estilo específico para o dia atual com maior contraste */
 :deep(.fc-day-today) {
-  background-color: #5ee5da !important; 
+  background-color: #060025 !important; 
   font-weight: bold;
+}
+
+/* Estilos para os dias da semana no cabeçalho */
+:deep(.fc-col-header-cell) {
+  background-color: #2f333a; 
+  color: white;
+}
+
+/* Estilo para as células do calendário (dias) */
+:deep(.fc-daygrid-day) {
+  background-color: #2b2b30;
+  transition: background-color 0.2s;
+}
+
+:deep(.fc-daygrid-day:hover) {
+  background-color: #484848; 
+}
+
+/* Borda entre as células do calendário */
+:deep(.fc-daygrid-day-frame) {
+  border: 0.5px solid #565555;
 }
 </style> 

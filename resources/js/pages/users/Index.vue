@@ -106,19 +106,19 @@
                         <label class="block mb-1 text-sm font-medium text-foreground">Funções</label>
                         <div class="mt-2 space-y-2">
                             <template v-if="isAdmin">
-                                <div v-for="role in roles" :key="role.id" class="flex items-center">
-                                    <input
-                                        :id="'role-' + role.id"
+                            <div v-for="role in roles" :key="role.id" class="flex items-center">
+                                <input
+                                    :id="'role-' + role.id"
                                         type="radio"
-                                        :value="role.id"
-                                        v-model="editForm.roles"
+                                    :value="role.id"
+                                    v-model="editForm.roles"
                                         :name="'user-role'"
                                         class="h-4 w-4 text-primary border-input rounded focus:ring-primary"
-                                    />
-                                    <label :for="'role-' + role.id" class="ml-2 block text-sm text-gray-300">
+                                />
+                                <label :for="'role-' + role.id" class="ml-2 block text-sm text-gray-300">
                                         {{ role.nome }} <span class="text-muted-foreground text-xs">{{ role.descricao }}</span>
-                                    </label>
-                                </div>
+                                </label>
+                            </div>
                             </template>
                             <template v-else>
                                 <span v-for="roleId in editForm.roles" :key="roleId">

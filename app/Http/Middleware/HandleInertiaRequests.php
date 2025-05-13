@@ -54,6 +54,10 @@ class HandleInertiaRequests extends Middleware
                     'isManager' => $user->isManager(),
                     'isStaff' => $user->isStaff(),
                     'roles' => $user->roles->pluck('slug'),
+                    'tenant' => $user->tenant ? [
+                        'id' => $user->tenant->id,
+                        'nome' => $user->tenant->nome,
+                    ] : null,
                 ] : null,
             ],
             'ziggy' => [

@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import type { SharedData } from '@/types';
 
+const page = usePage<SharedData>();
+const tenant = computed(() => page.props.auth.user?.tenant);
 </script>
 
 <template>
@@ -9,6 +14,7 @@
         </div>
         <div class="ml-2 grid flex-1 text-left text-sm">
             <span class="mb-0.5 truncate font-semibold leading-none">Go Rocket CRM</span>
-        </div>
+            <span v-if="tenant" class="text-xs text-gray-500 truncate">{{ tenant.nome }}</span>
+    </div>
     </div>
 </template>

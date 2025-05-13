@@ -6,10 +6,26 @@
 >
     <testsuites>
         <testsuite name="Unit">
-            <directory>tests/Unit</directory>
+            <file>./tests/Unit/AtividadeFormatadorTest.php</file>
+            <file>./tests/Unit/UserRolesTest.php</file>
+            <file>./tests/Unit/BelongsToTenantMockTest.php</file>
+            <file>./tests/Unit/UtilsTest.php</file>
+            <file>./tests/Unit/StringUtilsTest.php</file>
+            <file>./tests/Unit/ArrayUtilsTest.php</file>
+            <file>./tests/Unit/DateTimeUtilsTest.php</file>
+            <file>./tests/Unit/ExampleTest.php</file>
+            <file>./tests/Unit/AtividadeBusinessLogicTest.php</file>
+            <file>./tests/Unit/ContactoServiceTest.php</file>
+            <file>./tests/Unit/EntidadeClassificacaoTest.php</file>
+            <file>./tests/Unit/KpiReportingServiceTest.php</file>
+            <file>./tests/Unit/FunnelSalesAnalysisTest.php</file>
+            <file>./tests/Unit/ClientFollowupStrategyTest.php</file>
+            <file>./tests/Unit/MarketingAutomationTest.php</file>
         </testsuite>
         <testsuite name="Feature">
-            <directory>tests/Feature</directory>
+            <file>./tests/Feature/ControllerViewTest.php</file>
+            <file>./tests/Feature/RouteExistsTest.php</file>
+            <file>./tests/Feature/ViewRenderTest.php</file>
         </testsuite>
     </testsuites>
     <source>

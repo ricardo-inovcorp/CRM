@@ -34,6 +34,14 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    isAdmin: boolean;
+    isManager: boolean;
+    isStaff: boolean;
+    roles: string[];
+    tenant?: {
+        id: number;
+        nome: string;
+    } | null;
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

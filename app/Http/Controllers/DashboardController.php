@@ -100,14 +100,14 @@ class DashboardController extends Controller
         // Retorna a vista com os dados iniciais
         return Inertia::render('Dashboard', [
             'initialStats' => [
-                'totalEntidades' => $totalEntidades,
-                'totalContactos' => $totalContactos,
+            'totalEntidades' => $totalEntidades,
+            'totalContactos' => $totalContactos,
                 'totalAtividades' => $totalAtividades,
                 'totalNegocios' => $totalNegocios,
                 'valorTotalNegocios' => (float)$valorTotalNegocios,
                 'valorTotalNegociosGanhos' => (float)$valorTotalNegociosGanhos,
                 'estadosNegocios' => $estadosNegocios,
-                'atividadesRecentes' => $atividadesRecentes,
+            'atividadesRecentes' => $atividadesRecentes,
                 'negociosRecentes' => $negociosRecentes
             ]
         ]);

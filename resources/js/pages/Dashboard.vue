@@ -231,9 +231,9 @@ const getEstadoBadgeClass = (estado: string): string => {
 </script>
 
 <template>
-  <Head title="Dashboard" />
+    <Head title="Dashboard" />
 
-  <AppLayout>
+    <AppLayout>
     <div class="p-6 space-y-6">
       <header class="flex items-center justify-between">
         <div>
@@ -462,10 +462,10 @@ const getEstadoBadgeClass = (estado: string): string => {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
-  </AppLayout>
-</template>
+            </div>
+        </div>
+    </AppLayout>
+</template> 
 
 <style scoped>
 .animate-fade-in-up {

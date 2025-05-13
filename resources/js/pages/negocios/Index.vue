@@ -129,9 +129,9 @@ function handleEstadoUpdate({ negocio, novoEstado }) {
         feedback.value = `Negócio "${negocio.nome}" movido para ${novoEstado}`;
         
         // Limpar o feedback após 2 segundos
-        setTimeout(() => {
-          feedback.value = '';
-        }, 2000);
+  setTimeout(() => {
+    feedback.value = '';
+  }, 2000);
       })
       .catch(error => {
         console.error('Erro ao atualizar estado:', error);

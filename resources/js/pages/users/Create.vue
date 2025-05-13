@@ -154,7 +154,7 @@ const form = useForm({
 
 const page = usePage();
 const user = page.props.auth.user;
-const userRoles = user.roles ? user.roles.map(r => r.slug) : [];
+const userRoles = user.roles || [];
 const isAdmin = userRoles.includes('admin');
 const isManager = userRoles.includes('manager');
 
