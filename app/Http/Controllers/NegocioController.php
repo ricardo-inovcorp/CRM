@@ -115,9 +115,21 @@ class NegocioController extends Controller
         ]);
 
         $negocio = Negocio::create($validated);
+        
+        $dadosCompletos = $validated;
+        
         if (!empty($validated['contactos'])) {
             $negocio->contactos()->sync($validated['contactos']);
+            $dadosCompletos['contactos'] = $validated['contactos'];
         }
+        
+        // Registrar log de criação
+        $negocio->registrarLog(
+            'criacao',
+            'Negócio criado por ' . Auth::user()->name,
+            null,
+            $dadosCompletos
+        );
 
         return Redirect::route('negocios.index')->with('success', 'Negócio criado com sucesso.');
     }
@@ -133,7 +145,8 @@ class NegocioController extends Controller
                           $q->where('contactos.tenant_id', Auth::user()->tenant_id)
                             ->orWhereNull('contactos.tenant_id');
                       });
-            }
+            },
+            'logs.user'
         ]);
         
         return Inertia::render('negocios/Show', [
@@ -175,7 +188,18 @@ class NegocioController extends Controller
                 'estado' => 'required|in:' . implode(',', Negocio::ESTADOS),
             ]);
             
+            // Capturar dados anteriores
+            $dadosAnteriores = $negocio->toArray();
+            
             $negocio->update($validated);
+            
+            // Registrar log de alteração de estado
+            $negocio->registrarLog(
+                'alteracao',
+                'Estado do negócio alterado por ' . Auth::user()->name,
+                ['estado' => $dadosAnteriores['estado']],
+                ['estado' => $validated['estado']]
+            );
             
             // Verificar se a requisição espera uma resposta Inertia (do formulário modal)
             if ($request->header('X-Inertia')) {
@@ -197,9 +221,27 @@ class NegocioController extends Controller
             'contactos.*' => 'exists:contactos,id',
         ]);
 
+        // Capturar dados anteriores para o log
+        $dadosAnteriores = $negocio->toArray();
+        $dadosAnteriores['contactos'] = $negocio->contactos()->pluck('contactos.id')->toArray();
+        
         $negocio->update($validated);
+        
+        $dadosNovos = $validated;
+        
         if (isset($validated['contactos'])) {
             $negocio->contactos()->sync($validated['contactos']);
+            $dadosNovos['contactos'] = $validated['contactos'];
+        }
+        
+        // Registrar log de alteração apenas se houve mudanças
+        if ($dadosAnteriores != array_merge($negocio->toArray(), ['contactos' => $dadosNovos['contactos'] ?? []])) {
+            $negocio->registrarLog(
+                'alteracao',
+                'Negócio alterado por ' . Auth::user()->name,
+                $dadosAnteriores,
+                $dadosNovos
+            );
         }
 
         return Redirect::route('negocios.index')->with('success', 'Negócio atualizado com sucesso.');

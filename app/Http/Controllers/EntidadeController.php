@@ -76,7 +76,7 @@ class EntidadeController extends Controller
             'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
             'observacoes' => 'nullable|string',
-            'estado' => 'required|string|in:Ativo,Inativo',
+            'estado' => 'required|string|in:' . implode(',', Entidade::ESTADOS_DISPONIVEIS),
         ]);
         
         // Garantir que temos dados válidos para o website
@@ -87,6 +87,14 @@ class EntidadeController extends Controller
         // O trait BelongsToTenant deve definir o tenant_id automaticamente
         $entidade = Entidade::create($validated);
         
+        // Registrar log de criação
+        $entidade->registrarLog(
+            'criacao', 
+            'Entidade criada por ' . Auth::user()->name,
+            null,
+            $validated
+        );
+        
         return Redirect::route('entidades.index')
             ->with('success', 'Entidade criada com sucesso.');
     }
@@ -96,7 +104,7 @@ class EntidadeController extends Controller
      */
     public function show(Entidade $entidade)
     {
-        $entidade->load(['pais', 'contactos', 'atividades']);
+        $entidade->load(['pais', 'contactos', 'atividades', 'logs.user']);
         
         return Inertia::render('entidades/Show', [
             'entidade' => $entidade,
@@ -131,7 +139,7 @@ class EntidadeController extends Controller
             'email' => 'nullable|email|max:255',
             'website' => 'nullable|url|max:255',
             'observacoes' => 'nullable|string',
-            'estado' => 'required|string|in:Ativo,Inativo',
+            'estado' => 'required|string|in:' . implode(',', Entidade::ESTADOS_DISPONIVEIS),
         ]);
         
         // Garantir que temos dados válidos para o website
@@ -139,7 +147,21 @@ class EntidadeController extends Controller
             $validated['website'] = null;
         }
         
+        // Capturar os dados anteriores para o log
+        $dadosAnteriores = $entidade->toArray();
+        
+        // Atualizar a entidade
         $entidade->update($validated);
+        
+        // Registrar log de alteração apenas se houve alterações
+        if ($dadosAnteriores != $entidade->toArray()) {
+            $entidade->registrarLog(
+                'alteracao',
+                'Entidade alterada por ' . Auth::user()->name,
+                $dadosAnteriores,
+                $validated
+            );
+        }
         
         if ($request->wantsJson()) {
             return response()->json([

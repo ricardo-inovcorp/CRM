@@ -154,6 +154,14 @@ class AtividadeController extends Controller
             $atividade->participantes()->attach($participantes);
         }
         
+        // Registrar log de criação
+        $atividade->registrarLog(
+            'criacao', 
+            'Atividade criada por ' . Auth::user()->name,
+            null,
+            array_merge($validated, ['participantes' => $participantes])
+        );
+        
         return Redirect::route('calendario.index')
             ->with('success', 'Atividade criada com sucesso.');
     }
@@ -163,7 +171,14 @@ class AtividadeController extends Controller
      */
     public function show(Atividade $atividade)
     {
-        $atividade->load(['entidade', 'contacto', 'tipo', 'participantes', 'conhecimento']);
+        $atividade->load([
+            'entidade', 
+            'contacto', 
+            'tipo', 
+            'participantes', 
+            'conhecimento',
+            'logs.user'
+        ]);
         
         return Inertia::render('atividades/Show', [
             'atividade' => $atividade,
@@ -225,6 +240,11 @@ class AtividadeController extends Controller
         
         unset($validated['participantes'], $validated['conhecimento']);
         
+        // Registrar dados anteriores para o log
+        $dadosAnteriores = $atividade->toArray();
+        $dadosAnteriores['participantes'] = $atividade->participantes()->pluck('id')->toArray();
+        $dadosAnteriores['conhecimento'] = $atividade->conhecimento()->pluck('id')->toArray();
+        
         // Atualizar a atividade
         $atividade->update($validated);
         
@@ -234,6 +254,20 @@ class AtividadeController extends Controller
         // Sincronizar conhecimento
         $atividade->conhecimento()->sync($conhecimento);
         
+        // Preparar dados novos para o log
+        $dadosNovos = array_merge($validated, [
+            'participantes' => $participantes,
+            'conhecimento' => $conhecimento
+        ]);
+        
+        // Registrar log de alteração
+        $atividade->registrarLog(
+            'alteracao', 
+            'Atividade atualizada por ' . Auth::user()->name,
+            $dadosAnteriores,
+            $dadosNovos
+        );
+        
         return back()->with('success', 'Atividade atualizada com sucesso.');
     }
 
@@ -242,6 +276,19 @@ class AtividadeController extends Controller
      */
     public function destroy(Atividade $atividade)
     {
+        // Registrar log antes de excluir
+        $dadosAnteriores = $atividade->toArray();
+        $dadosAnteriores['participantes'] = $atividade->participantes()->pluck('id')->toArray();
+        $dadosAnteriores['conhecimento'] = $atividade->conhecimento()->pluck('id')->toArray();
+        
+        // Registrar log de exclusão
+        $atividade->registrarLog(
+            'exclusao', 
+            'Atividade excluída por ' . Auth::user()->name,
+            $dadosAnteriores,
+            null
+        );
+        
         $atividade->delete();
         
         return Redirect::route('atividades.index')

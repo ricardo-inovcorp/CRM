@@ -95,10 +95,18 @@ class ContactoController extends Controller
             'telemovel' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'observacoes' => 'nullable|string',
-            'estado' => 'required|string|in:Ativo,Inativo',
+            'estado' => 'required|string|in:' . implode(',', Contacto::ESTADOS_DISPONIVEIS),
         ]);
         
-        Contacto::create($validated);
+        $contacto = Contacto::create($validated);
+        
+        // Registrar log de criação
+        $contacto->registrarLog(
+            'criacao',
+            'Contacto criado por ' . Auth::user()->name,
+            null,
+            $validated
+        );
         
         return Redirect::route('contactos.index')
             ->with('success', 'Contacto criado com sucesso.');
@@ -109,7 +117,7 @@ class ContactoController extends Controller
      */
     public function show(Contacto $contacto)
     {
-        $contacto->load(['entidade', 'funcao', 'atividades']);
+        $contacto->load(['entidade', 'funcao', 'atividades', 'logs.user']);
         
         return Inertia::render('contactos/Show', [
             'contacto' => $contacto,
@@ -145,10 +153,24 @@ class ContactoController extends Controller
             'telemovel' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'observacoes' => 'nullable|string',
-            'estado' => 'required|string|in:Ativo,Inativo',
+            'estado' => 'required|string|in:' . implode(',', Contacto::ESTADOS_DISPONIVEIS),
         ]);
         
+        // Capturar os dados anteriores para o log
+        $dadosAnteriores = $contacto->toArray();
+        
+        // Atualizar o contacto
         $contacto->update($validated);
+        
+        // Registrar log de alteração apenas se houve alterações
+        if ($dadosAnteriores != $contacto->toArray()) {
+            $contacto->registrarLog(
+                'alteracao',
+                'Contacto alterado por ' . Auth::user()->name,
+                $dadosAnteriores,
+                $validated
+            );
+        }
         
         return back()->with('success', 'Contacto atualizado com sucesso.');
     }

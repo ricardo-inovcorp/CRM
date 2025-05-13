@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Traits\BelongsToTenant;
+use Illuminate\Support\Facades\Auth;
 
 class Atividade extends Model
 {
@@ -53,6 +55,24 @@ class Atividade extends Model
     {
         return $this->belongsToMany(User::class, 'atividade_conhecimento')
                     ->withTimestamps();
+    }
+    
+    public function logs(): HasMany
+    {
+        return $this->hasMany(AtividadeLog::class)->orderBy('created_at', 'desc');
+    }
+
+    public function registrarLog(string $tipo, string $descricao, array $dadosAnteriores = null, array $dadosNovos = null): AtividadeLog
+    {
+        return AtividadeLog::create([
+            'atividade_id' => $this->id,
+            'user_id' => Auth::id(),
+            'tipo' => $tipo,
+            'descricao' => $descricao,
+            'dados_anteriores' => $dadosAnteriores,
+            'dados_novos' => $dadosNovos,
+            'tenant_id' => $this->tenant_id,
+        ]);
     }
 
     public function duracaoFormatada(): string

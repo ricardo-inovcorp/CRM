@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Traits\BelongsToTenant;
 
 class Negocio extends Model
 {
-    use HasFactory, UsesTenantConnection;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'nome',
@@ -51,6 +53,24 @@ class Negocio extends Model
         return $this->belongsTo(Entidade::class, 'entidade_id');
     }
 
+    public function logs(): HasMany
+    {
+        return $this->hasMany(NegocioLog::class)->orderBy('created_at', 'desc');
+    }
+    
+    public function registrarLog(string $tipo, string $descricao, array $dadosAnteriores = null, array $dadosNovos = null): NegocioLog
+    {
+        return NegocioLog::create([
+            'negocio_id' => $this->id,
+            'user_id' => Auth::id(),
+            'tipo' => $tipo,
+            'descricao' => $descricao,
+            'dados_anteriores' => $dadosAnteriores,
+            'dados_novos' => $dadosNovos,
+            'tenant_id' => $this->tenant_id,
+        ]);
+    }
+
     public function contactos(): BelongsToMany
     {
         return $this->belongsToMany(Contacto::class, 'negocio_contacto', 'negocio_id', 'contacto_id')
@@ -60,5 +80,22 @@ class Negocio extends Model
                           ->orWhereNull('contactos.tenant_id');
                 }
             });
+    }
+    
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($negocio) {
+            // Registrar log antes de excluir
+            if (Auth::check()) {
+                $negocio->registrarLog(
+                    'exclusao',
+                    'Negócio excluído por ' . Auth::user()->name,
+                    $negocio->toArray(),
+                    null
+                );
+            }
+        });
     }
 } 
