@@ -2,7 +2,7 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Pencil, Trash2, Eye, LayoutGrid, Table, Search, Filter, Building, ListFilter } from 'lucide-vue-next';
+import { Pencil, Trash2, Eye, LayoutGrid, Table, Search, Filter, Building, ListFilter, AlertTriangle } from 'lucide-vue-next';
 import Dialog from '@/components/ui/dialog/Dialog.vue';
 import DialogContent from '@/components/ui/dialog/DialogContent.vue';
 import DialogHeader from '@/components/ui/dialog/DialogHeader.vue';
@@ -141,10 +141,42 @@ function submitEdit() {
   });
 }
 
+const showDeleteModal = ref(false);
+const negocioDelete = ref(null);
+
+function openDelete(negocio) {
+  negocioDelete.value = negocio;
+  showDeleteModal.value = true;
+}
+
+function closeModals() {
+  showEditModal.value = false;
+  showDeleteModal.value = false;
+  negocioEdit.value = null;
+  negocioDelete.value = null;
+  feedback.value = '';
+}
+
+function submitDelete() {
+  router.delete(route('negocios.destroy', negocioDelete.value.id), {
+    onSuccess: () => {
+      feedback.value = 'Negócio eliminado com sucesso!';
+      setTimeout(() => {
+        closeModals();
+        setTimeout(() => {
+          router.reload({ only: ['negocios'] });
+        }, 100);
+      }, 1000);
+    },
+    onError: (errors) => {
+      feedback.value = Object.values(errors).flat().join(', ') || 'Erro ao eliminar negócio.';
+    }
+  });
+}
+
 function destroy(id) {
-  if (confirm('Tem certeza que deseja apagar este negócio?')) {
-    router.delete(route('negocios.destroy', id));
-  }
+  const negocio = localNegocios.value.find(n => n.id === id);
+  openDelete(negocio);
 }
 
 function handleEstadoUpdate({ negocio, novoEstado }) {
@@ -362,7 +394,7 @@ const filteredContactos = computed(() => {
                       <button v-if="canEdit" @click.stop="openEdit(negocio)" class="p-1 rounded hover:bg-zinc-600" title="Editar">
                         <Pencil class="w-5 h-5 text-primary" />
                       </button>
-                      <button v-if="isAdmin" @click.stop="destroy(negocio.id)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
+                      <button v-if="isAdmin" @click.stop="openDelete(negocio)" class="p-1 rounded hover:bg-zinc-600" title="Eliminar">
                         <Trash2 class="w-5 h-5 text-red-500" />
                       </button>
                     </div>
@@ -456,6 +488,31 @@ const filteredContactos = computed(() => {
             </button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Modal de Confirmação de Exclusão -->
+    <Dialog v-model:open="showDeleteModal">
+      <DialogContent class="max-w-md w-full">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2 text-red-500">
+            <AlertTriangle class="w-5 h-5" />
+            Eliminar Negócio
+          </DialogTitle>
+        </DialogHeader>
+        <div class="py-4">
+          <p class="text-gray-200 mb-4">
+            Tem certeza que deseja eliminar <span class="font-semibold">{{ negocioDelete?.nome }}</span>?
+          </p>
+          <p class="text-red-400 text-sm">
+            Esta ação é <span class="font-bold">irreversível</span> e irá eliminar também todas as atividades relacionadas a este negócio.
+          </p>
+        </div>
+        <DialogFooter class="flex justify-end gap-2 mt-4">
+          <button type="button" @click="closeModals" class="px-4 py-2 rounded bg-zinc-700 text-white hover:bg-zinc-600">Cancelar</button>
+          <button type="button" @click="submitDelete" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Eliminar</button>
+        </DialogFooter>
+        <div v-if="feedback" class="text-center mt-2" :class="feedback.includes('Erro') ? 'text-red-500' : 'text-green-500'">{{ feedback }}</div>
       </DialogContent>
     </Dialog>
   </AppLayout>
